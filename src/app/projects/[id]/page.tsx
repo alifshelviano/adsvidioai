@@ -3,7 +3,7 @@ import { Header } from "@/components/layout/header";
 import { getProjectById } from "@/lib/data";
 import { ProjectClientPage } from "@/components/projects/project-client-page";
 
-export default function ProjectPage({ params }: { params: { id: string } }) {
+export default async function ProjectPage({ params }: { params: { id: string } }) {
   const project = getProjectById(params.id);
 
   if (!project) {
