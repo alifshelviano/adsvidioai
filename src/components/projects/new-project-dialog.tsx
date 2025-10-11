@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Loader2 } from "lucide-react";
+import { extractProductInfo, ExtractProductInfoOutput } from "@/ai/flows/extract-product-info";
 
 import {
   Dialog,
@@ -16,16 +17,49 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 export function NewProjectDialog() {
   const [open, setOpen] = useState(false);
+  const [url, setUrl] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { toast } = useToast();
 
-  const handleCreateProject = () => {
-    // In a real app, you'd handle form submission, URL parsing, and project creation here.
-    // For this prototype, we'll navigate to a sample project.
-    router.push("/projects/1");
-    setOpen(false);
+  const handleCreateProject = async () => {
+    if (!url) {
+      toast({
+        variant: "destructive",
+        title: "URL is required",
+        description: "Please enter a product URL to continue.",
+      });
+      return;
+    }
+    setLoading(true);
+    try {
+      const productInfo: ExtractProductInfoOutput = await extractProductInfo({ url });
+      
+      const query = new URLSearchParams({
+        title: productInfo.title,
+        description: productInfo.description,
+        price: productInfo.price.toString(),
+        imageUrl: productInfo.imageUrl,
+      });
+
+      router.push(`/projects/new?${query.toString()}`);
+      setOpen(false);
+
+    } catch (error) {
+      console.error("Failed to extract product info:", error);
+      toast({
+        variant: "destructive",
+        title: "Extraction Failed",
+        description: "Could not extract product information from the URL. Please check the URL and try again.",
+      });
+    } finally {
+      setLoading(false);
+      setUrl("");
+    }
   };
 
   return (
@@ -52,6 +86,9 @@ export function NewProjectDialog() {
               id="url"
               placeholder="https://shopee.com/product/..."
               className="col-span-3"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              disabled={loading}
             />
           </div>
           <p className="text-center text-sm text-muted-foreground">
@@ -60,10 +97,10 @@ export function NewProjectDialog() {
         </div>
         <DialogFooter>
           <div className="flex w-full flex-col gap-2">
-            <Button onClick={handleCreateProject}>Create Project</Button>
-            <p className="text-center text-xs text-muted-foreground">
-              (In this prototype, you'll be taken to a sample project)
-            </p>
+            <Button onClick={handleCreateProject} disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading ? "Extracting..." : "Create Project"}
+            </Button>
           </div>
         </DialogFooter>
       </DialogContent>
