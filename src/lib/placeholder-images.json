@@ -1,3 +1,28 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "project1",
+      "description": "A steaming cup of coffee on a rustic wooden table, with autumn leaves scattered around.",
+      "imageUrl": "https://picsum.photos/seed/1/600/400",
+      "imageHint": "coffee autumn"
+    },
+    {
+      "id": "project2",
+      "description": "A person wearing modern headphones, deeply focused on their music, with a blurred city background.",
+      "imageUrl": "https://picsum.photos/seed/2/600/400",
+      "imageHint": "person music"
+    },
+    {
+      "id": "project3",
+      "description": "A serene yoga session at sunrise, with a person on a yoga mat overlooking a calm lake.",
+      "imageUrl": "https://picsum.photos/seed/3/600/400",
+      "imageHint": "yoga sunrise"
+    },
+    {
+      "id": "product1",
+      "description": "A close-up shot of roasted coffee beans in a burlap sack.",
+      "imageUrl": "https://picsum.photos/seed/p1/600/400",
+      "imageHint": "coffee beans"
+    }
+  ]
 }

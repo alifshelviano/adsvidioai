@@ -1,0 +1,274 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import { Bot, Image as ImageIcon, AudioLines, Loader2, Sparkles } from "lucide-react";
+
+import type { Project, AdContent } from "@/lib/types";
+import {
+  generateAdContent,
+  GenerateAdContentOutput,
+} from "@/ai/flows/generate-ad-content";
+import {
+  generatePromotionalVisuals,
+  GeneratePromotionalVisualsOutput,
+} from "@/ai/flows/generate-promotional-visuals";
+import {
+  convertAdScriptToAudio,
+  ConvertAdScriptToAudioOutput,
+} from "@/ai/flows/convert-ad-script-to-audio";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+
+type LoadingStates = {
+  adContent: boolean;
+  visuals: boolean;
+  narration: boolean;
+};
+
+export function ProjectClientPage({ project }: { project: Project }) {
+  const { toast } = useToast();
+  const [adContent, setAdContent] = useState<AdContent | null>(null);
+  const [visual, setVisual] = useState<string | null>(null);
+  const [narration, setNarration] = useState<string | null>(null);
+
+  const [loading, setLoading] = useState<LoadingStates>({
+    adContent: false,
+    visuals: false,
+    narration: false,
+  });
+
+  const handleGenerateAdContent = async () => {
+    setLoading((prev) => ({ ...prev, adContent: true }));
+    try {
+      const result: GenerateAdContentOutput = await generateAdContent({
+        productTitle: project.product.title,
+        productDescription: project.product.description,
+        productPrice: project.product.price,
+        productImageUrl: project.product.imageUrl,
+      });
+      setAdContent(result);
+    } catch (error) {
+      console.error("Error generating ad content:", error);
+      toast({
+        variant: "destructive",
+        title: "Generation Failed",
+        description: "Could not generate ad content.",
+      });
+    } finally {
+      setLoading((prev) => ({ ...prev, adContent: false }));
+    }
+  };
+
+  const handleGenerateVisuals = async () => {
+    setLoading((prev) => ({ ...prev, visuals: true }));
+    try {
+      const result: GeneratePromotionalVisualsOutput =
+        await generatePromotionalVisuals({
+          productName: project.product.title,
+          productDescription: project.product.description,
+          brandName: "AdForge AI",
+          targetAudience: "Online Shoppers",
+        });
+      setVisual(result.visualDataUri);
+    } catch (error) {
+      console.error("Error generating visuals:", error);
+      toast({
+        variant: "destructive",
+        title: "Generation Failed",
+        description: "Could not generate visuals.",
+      });
+    } finally {
+      setLoading((prev) => ({ ...prev, visuals: false }));
+    }
+  };
+
+  const handleGenerateNarration = async () => {
+    if (!adContent?.adCopy) return;
+    setLoading((prev) => ({ ...prev, narration: true }));
+    try {
+      const result: ConvertAdScriptToAudioOutput = await convertAdScriptToAudio(
+        {
+          adScript: adContent.adCopy,
+        }
+      );
+      setNarration(result.audioDataUri);
+    } catch (error) {
+      console.error("Error generating narration:", error);
+      toast({
+        variant: "destructive",
+        title: "Generation Failed",
+        description: "Could not generate narration.",
+      });
+    } finally {
+      setLoading((prev) => ({ ...prev, narration: false }));
+    }
+  };
+
+  const renderAdContent = () => {
+    if (loading.adContent) {
+      return (
+        <div className="space-y-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      );
+    }
+    if (adContent) {
+      return (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Ad Copy</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">{adContent.adCopy}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Captions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">{adContent.captions}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Hashtags</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              {adContent.hashtags.split(" ").map((tag, i) => (
+                <Badge key={i} variant="secondary">{tag}</Badge>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+    return (
+        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-12 text-center">
+            <div className="mb-4 rounded-full bg-primary/10 p-3">
+                <Bot className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="mb-2 text-xl font-semibold">Generate Ad Content</h3>
+            <p className="mb-4 text-muted-foreground">Click the button to start generating ad copy, captions, and hashtags for your product.</p>
+            <Button onClick={handleGenerateAdContent}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            Generate
+            </Button>
+        </div>
+    );
+  };
+  
+  const renderVisuals = () => {
+    if (loading.visuals) {
+      return <Skeleton className="aspect-video w-full" />;
+    }
+    if (visual) {
+      return <Image src={visual} alt="Generated visual" width={1280} height={720} className="rounded-lg border" />;
+    }
+    return (
+        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-12 text-center">
+             <div className="mb-4 rounded-full bg-accent/10 p-3">
+                <ImageIcon className="h-8 w-8 text-accent" />
+            </div>
+            <h3 className="mb-2 text-xl font-semibold">Generate Promotional Visual</h3>
+            <p className="mb-4 text-muted-foreground">Create a unique, eye-catching image for your ad campaign.</p>
+            <Button onClick={handleGenerateVisuals} variant="outline">
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generate
+            </Button>
+        </div>
+    )
+  }
+
+  const renderNarration = () => {
+    if (loading.narration) {
+        return <Skeleton className="h-16 w-full" />;
+    }
+    if (narration) {
+        return <audio controls src={narration} className="w-full"></audio>
+    }
+    return (
+        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-12 text-center">
+            <div className="mb-4 rounded-full bg-secondary p-3">
+                <AudioLines className="h-8 w-8 text-secondary-foreground" />
+            </div>
+            <h3 className="mb-2 text-xl font-semibold">Generate Voice Narration</h3>
+            <p className="mb-4 text-muted-foreground">Convert your ad script into a professional voice-over. Requires generated ad content first.</p>
+            <Button onClick={handleGenerateNarration} variant="outline" disabled={!adContent}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generate
+            </Button>
+        </div>
+    )
+  }
+
+  return (
+    <Tabs defaultValue="product" className="w-full">
+      <TabsList className="grid w-full grid-cols-4">
+        <TabsTrigger value="product">Product Info</TabsTrigger>
+        <TabsTrigger value="content" disabled={loading.adContent}>
+          {loading.adContent && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Ad Content
+        </TabsTrigger>
+        <TabsTrigger value="visuals" disabled={loading.visuals}>
+            {loading.visuals && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Visuals
+        </TabsTrigger>
+        <TabsTrigger value="narration" disabled={loading.narration}>
+            {loading.narration && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Narration
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="product">
+        <Card>
+          <CardHeader>
+            <CardTitle>{project.product.title}</CardTitle>
+            <CardDescription>
+              Price: ${project.product.price.toFixed(2)}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-6 md:grid-cols-2">
+            <div className="relative aspect-video">
+              <Image
+                src={project.product.imageUrl}
+                alt={project.product.title}
+                fill
+                className="rounded-md border object-cover"
+                data-ai-hint={project.product.imageHint}
+              />
+            </div>
+            <p className="text-muted-foreground">
+              {project.product.description}
+            </p>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="content">
+        {renderAdContent()}
+      </TabsContent>
+      <TabsContent value="visuals">
+        {renderVisuals()}
+      </TabsContent>
+      <TabsContent value="narration">
+        {renderNarration()}
+      </TabsContent>
+    </Tabs>
+  );
+}
