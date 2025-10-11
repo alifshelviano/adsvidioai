@@ -86,7 +86,7 @@ const extractProductInfoFlow = ai.defineFlow(
   },
   async input => {
     const llmResponse = await extractProductInfoPrompt(input);
-    const output = llmResponse.output();
+    const output = llmResponse.output;
     if (!output) {
       throw new Error('Failed to extract product info: No output from model.');
     }

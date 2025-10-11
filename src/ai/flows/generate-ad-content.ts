@@ -66,7 +66,11 @@ const generateAdContentFlow = ai.defineFlow(
     outputSchema: GenerateAdContentOutputSchema,
   },
   async input => {
-    const {output} = await generateAdContentPrompt(input);
-    return output!;
+    const llmResponse = await generateAdContentPrompt(input);
+    const output = llmResponse.output;
+    if (!output) {
+      throw new Error('Failed to generate ad content: No output from model.');
+    }
+    return output;
   }
 );
