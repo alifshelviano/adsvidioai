@@ -62,11 +62,20 @@ const extractProductInfoPrompt = ai.definePrompt({
   name: 'extractProductInfoPrompt',
   tools: [fetchPageContentTool],
   output: {schema: ExtractProductInfoOutputSchema},
-  prompt: `You are an expert web scraper and data extractor. Your task is to extract product information from the provided URL.
-  First, call the fetchPageContent tool with the provided 'url'.
-  Then, analyze the resulting HTML to find the product's name, a detailed description, its price (as a number, remove currency symbols and commas), and the URL of its main image.
-  Prioritize content that is most likely the main product information on the page. Look for common e-commerce HTML structures.
-  URL to process: {{{url}}}`,
+  prompt: `You are an expert web scraper and data extractor specializing in e-commerce sites.
+Your task is to extract structured product information from the provided URL.
+
+1.  First, call the 'fetchPageContent' tool with the provided 'url' to get the page's HTML.
+2.  Analyze the HTML to find a <script type="application/ld+json"> tag. This tag contains structured data about the product.
+3.  Parse the JSON content within that script tag. You are looking for a JSON object with "@type" set to "Product".
+4.  From that "Product" JSON object, extract the following fields:
+    *   'name' for the product title.
+    *   'description' for the product description.
+    *   'image' for the product's main image URL.
+    *   From the 'offers' object, find the 'lowPrice', 'highPrice', or 'price' and use that for the price. It must be a number.
+5.  If you cannot find a "Product" schema, do your best to find the information from the general HTML, but prioritize the structured data.
+
+URL to process: {{{url}}}`,
 });
 
 const extractProductInfoFlow = ai.defineFlow(
