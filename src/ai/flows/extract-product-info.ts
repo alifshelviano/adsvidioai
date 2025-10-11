@@ -10,7 +10,6 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import {genkit} from 'genkit';
-import {v4 as uuidv4} from 'uuid';
 
 const fetchPageContentTool = ai.defineTool(
   {
@@ -63,14 +62,10 @@ const extractProductInfoPrompt = ai.definePrompt({
   name: 'extractProductInfoPrompt',
   tools: [fetchPageContentTool],
   output: {schema: ExtractProductInfoOutputSchema},
-  prompt: `You are an expert web scraper and data extractor. Your task is to extract product information from the provided URL.
-
-  Use the fetchPageContent tool to get the HTML of the page. Then, analyze the HTML to find the product's name, a detailed description, its price (as a number, remove currency symbols and commas), and the URL of its main image.
-
-  Prioritize content that is most likely the main product information on the page. Look for common e-commerce HTML structures.
-  
-  URL to process: {{{url}}}
-  `,
+  system: `You are an expert web scraper and data extractor. Your task is to extract product information from the provided URL.
+You will use the fetchPageContent tool to get the HTML of the page. Then, analyze the HTML to find the product's name, a detailed description, its price (as a number, remove currency symbols and commas), and the URL of its main image.
+Prioritize content that is most likely the main product information on the page. Look for common e-commerce HTML structures.`,
+  user: `URL to process: {{{url}}}`,
 });
 
 const extractProductInfoFlow = ai.defineFlow(
