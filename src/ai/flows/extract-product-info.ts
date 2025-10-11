@@ -62,10 +62,11 @@ const extractProductInfoPrompt = ai.definePrompt({
   name: 'extractProductInfoPrompt',
   tools: [fetchPageContentTool],
   output: {schema: ExtractProductInfoOutputSchema},
-  system: `You are an expert web scraper and data extractor. Your task is to extract product information from the provided URL.
-You will use the fetchPageContent tool to get the HTML of the page. Then, analyze the HTML to find the product's name, a detailed description, its price (as a number, remove currency symbols and commas), and the URL of its main image.
-Prioritize content that is most likely the main product information on the page. Look for common e-commerce HTML structures.`,
-  user: `URL to process: {{{url}}}`,
+  prompt: `You are an expert web scraper and data extractor. Your task is to extract product information from the provided URL.
+  First, call the fetchPageContent tool with the provided 'url'.
+  Then, analyze the resulting HTML to find the product's name, a detailed description, its price (as a number, remove currency symbols and commas), and the URL of its main image.
+  Prioritize content that is most likely the main product information on the page. Look for common e-commerce HTML structures.
+  URL to process: {{{url}}}`,
 });
 
 const extractProductInfoFlow = ai.defineFlow(
@@ -75,7 +76,11 @@ const extractProductInfoFlow = ai.defineFlow(
     outputSchema: ExtractProductInfoOutputSchema,
   },
   async input => {
-    const {output} = await extractProductInfoPrompt(input);
-    return output!;
+    const llmResponse = await extractProductInfoPrompt(input);
+    const output = llmResponse.output();
+    if (!output) {
+      throw new Error('Failed to extract product info: No output from model.');
+    }
+    return output;
   }
 );
