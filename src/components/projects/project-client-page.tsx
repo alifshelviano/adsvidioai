@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
 import { useState } from "react";
 import Image from "next/image";
-import { Bot, Image as ImageIcon, AudioLines, Loader2, Sparkles } from "lucide-react";
+import { Bot, Image as ImageIcon, AudioLines, Loader2, Sparkles, Download } from "lucide-react";
 
 import type { Project, AdContent } from "@/lib/types";
 import {
@@ -25,6 +25,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -115,6 +116,37 @@ export function ProjectClientPage({ project }: { project: Project }) {
       setLoading((prev) => ({ ...prev, narration: false }));
     }
   };
+  
+  const handleDownloadText = (content: AdContent) => {
+    const textContent = `
+Ad Copy:
+${content.adCopy}
+
+Captions:
+${content.captions}
+
+Hashtags:
+${content.hashtags}
+    `;
+    const blob = new Blob([textContent.trim()], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "ad_content.txt";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  const handleDownloadDataUri = (dataUri: string, filename: string) => {
+    const a = document.createElement('a');
+    a.href = dataUri;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   const renderAdContent = () => {
     if (loading.adContent) {
@@ -154,6 +186,12 @@ export function ProjectClientPage({ project }: { project: Project }) {
                 <Badge key={i} variant="secondary">{tag}</Badge>
               ))}
             </CardContent>
+             <CardFooter>
+              <Button variant="outline" onClick={() => handleDownloadText(adContent)}>
+                <Download className="mr-2 h-4 w-4" />
+                Download Content
+              </Button>
+            </CardFooter>
           </Card>
         </div>
       );
@@ -178,7 +216,19 @@ export function ProjectClientPage({ project }: { project: Project }) {
       return <Skeleton className="aspect-video w-full" />;
     }
     if (visual) {
-      return <Image src={visual} alt="Generated visual" width={1280} height={720} className="rounded-lg border" />;
+      return (
+        <Card>
+            <CardContent className="pt-6">
+                <Image src={visual} alt="Generated visual" width={1280} height={720} className="rounded-lg border" />
+            </CardContent>
+            <CardFooter>
+                <Button variant="outline" onClick={() => handleDownloadDataUri(visual, 'promotional_visual.png')}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Visual
+                </Button>
+            </CardFooter>
+        </Card>
+      )
     }
     return (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-12 text-center">
@@ -197,10 +247,22 @@ export function ProjectClientPage({ project }: { project: Project }) {
 
   const renderNarration = () => {
     if (loading.narration) {
-        return <Skeleton className="h-16 w-full" />;
+        return <Skeleton className="h-20 w-full" />;
     }
     if (narration) {
-        return <audio controls src={narration} className="w-full"></audio>
+        return (
+            <Card>
+                <CardContent className="pt-6">
+                    <audio controls src={narration} className="w-full"></audio>
+                </CardContent>
+                <CardFooter>
+                    <Button variant="outline" onClick={() => handleDownloadDataUri(narration, 'narration.wav')}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download Narration
+                    </Button>
+                </CardFooter>
+            </Card>
+        )
     }
     return (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-12 text-center">
