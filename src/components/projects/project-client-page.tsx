@@ -19,6 +19,7 @@ import {
 } from "@/ai/flows/convert-ad-script-to-audio";
 import { generateImageHuggingFace, GenerateImageHuggingFaceOutput } from "@/ai/flows/generate-image-huggingface";
 import { generateVideoAd, GenerateVideoAdOutput } from "@/ai/flows/generate-video-ad";
+import { generateVideoRunway, GenerateVideoRunwayOutput } from "@/ai/flows/generate-video-runway";
 
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,6 +46,7 @@ type LoadingStates = {
 };
 
 type VisualProvider = 'getimg.ai' | 'huggingface';
+type VideoProvider = 'veo' | 'runway';
 
 export function ProjectClientPage({ project }: { project: Project }) {
   const { toast } = useToast();
@@ -53,6 +55,7 @@ export function ProjectClientPage({ project }: { project: Project }) {
   const [narration, setNarration] = useState<string | null>(null);
   const [video, setVideo] = useState<string | null>(null);
   const [visualProvider, setVisualProvider] = useState<VisualProvider>('getimg.ai');
+  const [videoProvider, setVideoProvider] = useState<VideoProvider>('veo');
 
   const [loading, setLoading] = useState<LoadingStates>({
     adContent: false,
@@ -138,10 +141,18 @@ export function ProjectClientPage({ project }: { project: Project }) {
     if (!visual || !adContent) return;
     setLoading((prev) => ({...prev, video: true}));
     try {
-      const result: GenerateVideoAdOutput = await generateVideoAd({
-        imageDataUri: visual,
-        script: adContent.adCopy,
-      });
+      let result: GenerateVideoAdOutput | GenerateVideoRunwayOutput;
+      if (videoProvider === 'veo') {
+        result = await generateVideoAd({
+          imageDataUri: visual,
+          script: adContent.adCopy,
+        });
+      } else {
+        result = await generateVideoRunway({
+          imageDataUri: visual,
+          script: adContent.adCopy,
+        });
+      }
       setVideo(result.videoDataUri);
     } catch (error: any) {
       console.error("Error generating video:", error);
@@ -355,8 +366,20 @@ a.click();
             <div className="mb-4 rounded-full bg-purple-500/10 p-3">
                 <Film className="h-8 w-8 text-purple-500" />
             </div>
-            <h3 className="mb-2 text-xl font-semibold">Generate Silent Video Ad</h3>
-            <p className="mb-4 text-muted-foreground">Animate your visual into a short, silent video. Requires a generated visual first.</p>
+            <h3 className="mb-2 text-xl font-semibold">Generate Video Ad</h3>
+            <p className="mb-4 text-muted-foreground">Animate your visual into a short video. Requires a generated visual first.</p>
+             <div className="my-4 w-full max-w-sm space-y-2">
+                <Label htmlFor="video-provider">Video Provider</Label>
+                <Select value={videoProvider} onValueChange={(value: VideoProvider) => setVideoProvider(value)}>
+                    <SelectTrigger id="video-provider">
+                        <SelectValue placeholder="Select a provider" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="veo">Veo (Silent)</SelectItem>
+                        <SelectItem value="runway">RunwayML</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
             <Button onClick={handleGenerateVideo} variant="outline" disabled={!visual || !adContent}>
                 <Sparkles className="mr-2 h-4 w-4" />
                 Generate Video
