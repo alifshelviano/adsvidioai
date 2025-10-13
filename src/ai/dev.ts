@@ -6,3 +6,4 @@ import '@/ai/flows/generate-ad-content.ts';
 import '@/ai/flows/generate-promotional-visuals.ts';
 import '@/ai/flows/extract-product-info.ts';
 import '@/ai/flows/generate-image-huggingface.ts';
+import '@/ai/flows/generate-video-ad.ts';

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Bot, Image as ImageIcon, AudioLines, Loader2, Sparkles, Download } from "lucide-react";
+import { Bot, Image as ImageIcon, AudioLines, Loader2, Sparkles, Download, Film } from "lucide-react";
 
 import type { Project, AdContent } from "@/lib/types";
 import {
@@ -18,6 +18,7 @@ import {
   ConvertAdScriptToAudioOutput,
 } from "@/ai/flows/convert-ad-script-to-audio";
 import { generateImageHuggingFace, GenerateImageHuggingFaceOutput } from "@/ai/flows/generate-image-huggingface";
+import { generateVideoAd, GenerateVideoAdOutput } from "@/ai/flows/generate-video-ad";
 
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,6 +41,7 @@ type LoadingStates = {
   adContent: boolean;
   visuals: boolean;
   narration: boolean;
+  video: boolean;
 };
 
 type VisualProvider = 'getimg.ai' | 'huggingface';
@@ -49,12 +51,14 @@ export function ProjectClientPage({ project }: { project: Project }) {
   const [adContent, setAdContent] = useState<AdContent | null>(null);
   const [visual, setVisual] = useState<string | null>(null);
   const [narration, setNarration] = useState<string | null>(null);
+  const [video, setVideo] = useState<string | null>(null);
   const [visualProvider, setVisualProvider] = useState<VisualProvider>('getimg.ai');
 
   const [loading, setLoading] = useState<LoadingStates>({
     adContent: false,
     visuals: false,
     narration: false,
+    video: false,
   });
 
   const handleGenerateAdContent = async () => {
@@ -127,6 +131,28 @@ export function ProjectClientPage({ project }: { project: Project }) {
       });
     } finally {
       setLoading((prev) => ({ ...prev, narration: false }));
+    }
+  };
+
+    const handleGenerateVideo = async () => {
+    if (!visual || !narration || !adContent) return;
+    setLoading((prev) => ({...prev, video: true}));
+    try {
+      const result: GenerateVideoAdOutput = await generateVideoAd({
+        imageDataUri: visual,
+        audioDataUri: narration,
+        script: adContent.adCopy,
+      });
+      setVideo(result.videoDataUri);
+    } catch (error: any) {
+      console.error("Error generating video:", error);
+      toast({
+        variant: "destructive",
+        title: "Video Generation Failed",
+        description: `Could not generate video. ${error.message}`,
+      });
+    } finally {
+      setLoading((prev) => ({...prev, video: false}));
     }
   };
   
@@ -306,9 +332,43 @@ a.click();
     )
   }
 
+  const renderVideoAd = () => {
+    if (loading.video) {
+        return <Skeleton className="aspect-video w-full" />;
+    }
+    if (video) {
+        return (
+            <Card>
+                <CardContent className="pt-6">
+                    <video controls src={video} className="w-full rounded-lg border"></video>
+                </CardContent>
+                <CardFooter>
+                    <Button variant="outline" onClick={() => handleDownloadDataUri(video, 'video_ad.mp4')}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download Video
+                    </Button>
+                </CardFooter>
+            </Card>
+        )
+    }
+    return (
+        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-12 text-center">
+            <div className="mb-4 rounded-full bg-purple-500/10 p-3">
+                <Film className="h-8 w-8 text-purple-500" />
+            </div>
+            <h3 className="mb-2 text-xl font-semibold">Generate Video Ad</h3>
+            <p className="mb-4 text-muted-foreground">Combine your visual and narration into a final video ad. Requires generated visuals and narration first.</p>
+            <Button onClick={handleGenerateVideo} variant="outline" disabled={!visual || !narration}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generate Video
+            </Button>
+        </div>
+    )
+  }
+
   return (
     <Tabs defaultValue="product" className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="product">Product Info</TabsTrigger>
         <TabsTrigger value="content" disabled={loading.adContent}>
           {loading.adContent && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -321,6 +381,10 @@ a.click();
         <TabsTrigger value="narration" disabled={loading.narration}>
             {loading.narration && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Narration
+        </TabsTrigger>
+        <TabsTrigger value="video" disabled={loading.video}>
+            {loading.video && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Video Ad
         </TabsTrigger>
       </TabsList>
 
@@ -357,6 +421,9 @@ a.click();
       </TabsContent>
       <TabsContent value="narration">
         {renderNarration()}
+      </TabsContent>
+       <TabsContent value="video">
+        {renderVideoAd()}
       </TabsContent>
     </Tabs>
   );
