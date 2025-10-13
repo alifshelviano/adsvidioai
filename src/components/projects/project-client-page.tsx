@@ -18,7 +18,7 @@ import {
   ConvertAdScriptToAudioOutput,
 } from "@/ai/flows/convert-ad-script-to-audio";
 import { generateImageHuggingFace, GenerateImageHuggingFaceOutput } from "@/ai/flows/generate-image-huggingface";
-import { generateVideoAd, GenerateVideoAdOutput } from "@/ai/flows/generate-video-ad";
+import { generateVideoAd } from "@/ai/flows/generate-video-ad";
 
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -134,14 +134,14 @@ export function ProjectClientPage({ project }: { project: Project }) {
     }
   };
 
-    const handleGenerateVideo = async () => {
+  const handleGenerateVideo = async () => {
     if (!visual || !adContent) return;
-    setLoading((prev) => ({...prev, video: true}));
+    setLoading((prev) => ({ ...prev, video: true }));
     try {
       const result = await generateVideoAd({
-          imageDataUri: visual,
-          script: adContent.adCopy,
-        });
+        imageDataUri: visual,
+        script: adContent.adCopy,
+      });
       setVideo(result.videoDataUri);
     } catch (error: any) {
       console.error("Error generating video:", error);
@@ -151,7 +151,7 @@ export function ProjectClientPage({ project }: { project: Project }) {
         description: `Could not generate video. ${error.message}`,
       });
     } finally {
-      setLoading((prev) => ({...prev, video: false}));
+      setLoading((prev) => ({ ...prev, video: false }));
     }
   };
   
