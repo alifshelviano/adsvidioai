@@ -89,16 +89,17 @@ const reviewPlaceFlow = ai.defineFlow(
   {
     name: 'reviewPlaceFlow',
     inputSchema: ReviewPlaceInputSchema,
-    outputSchema: ReviewPlaceoOutputSchema,
+    outputSchema: ReviewPlaceOutputSchema,
   },
   async ({ url }) => {
     // Step 1: Extract content and generate a script
     const analysisResponse = await ai.generate({
-      prompt: `You are a marketing expert. Analyze the content of the provided URL, which contains reviews for a place.
-      1. Use the 'fetchReviewPageContent' tool to get the HTML of the URL: ${url}
-      2. From the content, identify the name of the place.
-      3. Summarize the reviews into a short, upbeat, and engaging marketing script (2-3 sentences).
-      4. Create a descriptive prompt for an image that captures the essence of the place (e.g., "A cozy cafe with warm lighting," "A beautiful beach with clear blue water").`,
+      prompt: `You are a marketing expert. Your goal is to generate a promotional script from a review page, like Google Maps.
+      1.  First, use the 'fetchReviewPageContent' tool to get the HTML content of the provided URL: ${url}
+      2.  From the HTML, identify the name of the place.
+      3.  Scan the content for customer reviews. Look for text that is positive and enthusiastic.
+      4.  Synthesize the best parts of the positive reviews into a short, upbeat, and engaging marketing script (2-3 sentences).
+      5.  Based on the place's name and the reviews, create a descriptive prompt for a visually appealing image that captures the essence of the place (e.g., "A cozy cafe with warm lighting," "A beautiful modern hotel lobby with a grand staircase," "A bustling, vibrant farmers market with fresh produce").`,
       tools: [fetchPageContentTool],
       output: {
         schema: z.object({
