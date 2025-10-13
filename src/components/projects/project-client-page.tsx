@@ -17,6 +17,8 @@ import {
   convertAdScriptToAudio,
   ConvertAdScriptToAudioOutput,
 } from "@/ai/flows/convert-ad-script-to-audio";
+import { generateImageHuggingFace, GenerateImageHuggingFaceOutput } from "@/ai/flows/generate-image-huggingface";
+
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -31,6 +33,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "../ui/label";
 
 type LoadingStates = {
   adContent: boolean;
@@ -38,11 +42,14 @@ type LoadingStates = {
   narration: boolean;
 };
 
+type VisualProvider = 'getimg.ai' | 'huggingface';
+
 export function ProjectClientPage({ project }: { project: Project }) {
   const { toast } = useToast();
   const [adContent, setAdContent] = useState<AdContent | null>(null);
   const [visual, setVisual] = useState<string | null>(null);
   const [narration, setNarration] = useState<string | null>(null);
+  const [visualProvider, setVisualProvider] = useState<VisualProvider>('getimg.ai');
 
   const [loading, setLoading] = useState<LoadingStates>({
     adContent: false,
@@ -75,20 +82,26 @@ export function ProjectClientPage({ project }: { project: Project }) {
   const handleGenerateVisuals = async () => {
     setLoading((prev) => ({ ...prev, visuals: true }));
     try {
-      const result: GeneratePromotionalVisualsOutput =
-        await generatePromotionalVisuals({
-          productName: project.product.title,
-          productDescription: project.product.description,
-          brandName: "AdForge AI",
-          targetAudience: "Online Shoppers",
-        });
-      setVisual(result.visualDataUri);
-    } catch (error) {
+        if (visualProvider === 'getimg.ai') {
+            const result: GeneratePromotionalVisualsOutput =
+                await generatePromotionalVisuals({
+                productName: project.product.title,
+                productDescription: project.product.description,
+                brandName: "AdForge AI",
+                targetAudience: "Online Shoppers",
+                });
+            setVisual(result.visualDataUri);
+        } else {
+            const prompt = `Create a promotional visual for ${project.product.title}, described as ${project.product.description}.`;
+            const result: GenerateImageHuggingFaceOutput = await generateImageHuggingFace({ prompt });
+            setVisual(result.imageDataUri);
+        }
+    } catch (error: any) {
       console.error("Error generating visuals:", error);
       toast({
         variant: "destructive",
         title: "Generation Failed",
-        description: "Could not generate visuals.",
+        description: `Could not generate visuals. ${error.message}`,
       });
     } finally {
       setLoading((prev) => ({ ...prev, visuals: false }));
@@ -144,7 +157,7 @@ ${content.hashtags}
     a.href = dataUri;
     a.download = filename;
     document.body.appendChild(a);
-    a.click();
+a.click();
     document.body.removeChild(a);
   };
 
@@ -237,6 +250,20 @@ ${content.hashtags}
             </div>
             <h3 className="mb-2 text-xl font-semibold">Generate Promotional Visual</h3>
             <p className="mb-4 text-muted-foreground">Create a unique, eye-catching image for your ad campaign.</p>
+
+            <div className="my-4 w-full max-w-sm space-y-2">
+                <Label htmlFor="visual-provider">Image Provider</Label>
+                <Select value={visualProvider} onValueChange={(value: VisualProvider) => setVisualProvider(value)}>
+                    <SelectTrigger id="visual-provider">
+                        <SelectValue placeholder="Select a provider" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="getimg.ai">getimg.ai</SelectItem>
+                        <SelectItem value="huggingface">Hugging Face</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+
             <Button onClick={handleGenerateVisuals} variant="outline">
                 <Sparkles className="mr-2 h-4 w-4" />
                 Generate

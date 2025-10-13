@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview Flow for generating promotional visuals from product data.
+ * @fileOverview Flow for generating promotional visuals from product data using getimg.ai.
  *
  * - generatePromotionalVisuals - A function that generates promotional visuals for ads.
  * - GeneratePromotionalVisualsInput - The input type for the generatePromotionalVisuals function.
@@ -50,7 +50,7 @@ const generatePromotionalVisualsFlow = ai.defineFlow(
     const response = await fetch('https://api.getimg.ai/v1/stable-diffusion/text-to-image', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
