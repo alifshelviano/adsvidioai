@@ -35,12 +35,14 @@ const fetchPageContentTool = ai.defineTool(
   }
 );
 
-export const ReviewPlaceInputSchema = z.object({
+
+const ReviewPlaceInputSchema = z.object({
   url: z.string().url().describe('The URL of the place to review.'),
 });
 export type ReviewPlaceInput = z.infer<typeof ReviewPlaceInputSchema>;
 
-export const ReviewPlaceOutputSchema = z.object({
+
+const ReviewPlaceOutputSchema = z.object({
   placeName: z.string().describe('The name of the place.'),
   script: z
     .string()
@@ -54,6 +56,7 @@ export const ReviewPlaceOutputSchema = z.object({
     .describe('The generated audio narration as a data URI.'),
 });
 export type ReviewPlaceOutput = z.infer<typeof ReviewPlaceOutputSchema>;
+
 
 // TTS WAV conversion utility
 async function toWav(
