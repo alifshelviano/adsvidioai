@@ -135,12 +135,11 @@ export function ProjectClientPage({ project }: { project: Project }) {
   };
 
     const handleGenerateVideo = async () => {
-    if (!visual || !narration || !adContent) return;
+    if (!visual || !adContent) return;
     setLoading((prev) => ({...prev, video: true}));
     try {
       const result: GenerateVideoAdOutput = await generateVideoAd({
         imageDataUri: visual,
-        audioDataUri: narration,
         script: adContent.adCopy,
       });
       setVideo(result.videoDataUri);
@@ -284,8 +283,8 @@ a.click();
                         <SelectValue placeholder="Select a provider" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="getimg.ai">getimg.ai</SelectItem>
-                        <SelectItem value="huggingface">Hugging Face</SelectItem>
+                        <SelectItem value="getimg.ai">getimg.ai (Landscape)</SelectItem>
+                        <SelectItem value="huggingface">Hugging Face (Portrait)</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -356,9 +355,9 @@ a.click();
             <div className="mb-4 rounded-full bg-purple-500/10 p-3">
                 <Film className="h-8 w-8 text-purple-500" />
             </div>
-            <h3 className="mb-2 text-xl font-semibold">Generate Video Ad</h3>
-            <p className="mb-4 text-muted-foreground">Combine your visual and narration into a final video ad. Requires generated visuals and narration first.</p>
-            <Button onClick={handleGenerateVideo} variant="outline" disabled={!visual || !narration}>
+            <h3 className="mb-2 text-xl font-semibold">Generate Silent Video Ad</h3>
+            <p className="mb-4 text-muted-foreground">Animate your visual into a short, silent video. Requires a generated visual first.</p>
+            <Button onClick={handleGenerateVideo} variant="outline" disabled={!visual || !adContent}>
                 <Sparkles className="mr-2 h-4 w-4" />
                 Generate Video
             </Button>
