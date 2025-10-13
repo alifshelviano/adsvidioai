@@ -30,8 +30,7 @@ export async function generateImageHuggingFace(
   return generateImageHuggingFaceFlow(input);
 }
 
-// A popular free-to-use Stable Diffusion model on Hugging Face
-const HUGGING_FACE_MODEL_URL = 'https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5';
+const HUGGING_FACE_MODEL_URL = 'https://router.huggingface.co/fal-ai/fal-ai/hunyuan-image/v3/text-to-image';
 
 const generateImageHuggingFaceFlow = ai.defineFlow(
   {
@@ -48,9 +47,15 @@ const generateImageHuggingFaceFlow = ai.defineFlow(
     const response = await fetch(
         HUGGING_FACE_MODEL_URL,
         {
-            headers: { Authorization: `Bearer ${apiKey}` },
+            headers: { 
+                Authorization: `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+            },
             method: "POST",
-            body: JSON.stringify({ inputs: prompt }),
+            body: JSON.stringify({ 
+                sync_mode: true,
+                prompt: `"${prompt}"` 
+            }),
         }
     );
 
