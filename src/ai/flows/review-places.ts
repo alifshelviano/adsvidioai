@@ -11,6 +11,28 @@ import { z } from 'genkit';
 import { genkit } from 'genkit';
 import wav from 'wav';
 
+const ReviewPlaceInputSchema = z.object({
+  url: z.string().url().describe('The URL of the place to review.'),
+});
+export type ReviewPlaceInput = z.infer<typeof ReviewPlaceInputSchema>;
+
+
+const ReviewPlaceOutputSchema = z.object({
+  placeName: z.string().describe('The name of the place.'),
+  script: z
+    .string()
+    .describe('A short, engaging script generated from the reviews.'),
+  imageUrl: z
+    .string()
+    .url()
+    .describe('URL of a visually appealing image of the place.'),
+  audioDataUri: z
+    .string()
+    .describe('The generated audio narration as a data URI.'),
+});
+export type ReviewPlaceOutput = z.infer<typeof ReviewPlaceOutputSchema>;
+
+
 // Tool to fetch web content
 const fetchPageContentTool = ai.defineTool(
   {
@@ -34,28 +56,6 @@ const fetchPageContentTool = ai.defineTool(
     }
   }
 );
-
-
-const ReviewPlaceInputSchema = z.object({
-  url: z.string().url().describe('The URL of the place to review.'),
-});
-export type ReviewPlaceInput = z.infer<typeof ReviewPlaceInputSchema>;
-
-
-const ReviewPlaceOutputSchema = z.object({
-  placeName: z.string().describe('The name of the place.'),
-  script: z
-    .string()
-    .describe('A short, engaging script generated from the reviews.'),
-  imageUrl: z
-    .string()
-    .url()
-    .describe('URL of a visually appealing image of the place.'),
-  audioDataUri: z
-    .string()
-    .describe('The generated audio narration as a data URI.'),
-});
-export type ReviewPlaceOutput = z.infer<typeof ReviewPlaceOutputSchema>;
 
 
 // TTS WAV conversion utility
@@ -97,8 +97,9 @@ const reviewPlaceFlow = ai.defineFlow(
   async ({ url }) => {
     // Step 1: Extract content and generate a script
     const analysisResponse = await ai.generate({
+      input: { url },
       prompt: `You are a marketing expert. Your goal is to generate a promotional script from a review page, like Google Maps.
-      1.  First, use the 'fetchReviewPageContent' tool to get the HTML content of the provided URL: ${url}
+      1.  First, use the 'fetchReviewPageContent' tool to get the HTML content of the provided URL: {{{url}}}
       2.  From the HTML, identify the name of the place.
       3.  Scan the content for customer reviews. Look for text that is positive and enthusiastic.
       4.  Synthesize the best parts of the positive reviews into a short, upbeat, and engaging marketing script (2-3 sentences).
