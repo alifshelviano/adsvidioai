@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Settings, FolderKanban, Bot } from "lucide-react";
+import { LayoutDashboard, Settings, FolderKanban, Bot, MessageSquareQuote } from "lucide-react";
 
 import {
   Sidebar,
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/projects", label: "Projects", icon: FolderKanban },
+  { href: "/reviews", label: "Reviews", icon: MessageSquareQuote },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
