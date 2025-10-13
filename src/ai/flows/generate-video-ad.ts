@@ -1,8 +1,8 @@
 'use server';
 /**
- * @fileOverview Flow for generating a silent video ad from an image and script.
+ * @fileOverview Flow for generating a video ad from an image and script.
  *
- * - generateVideoAd - A function that orchestrates the silent video generation.
+ * - generateVideoAd - A function that orchestrates the video generation.
  * - GenerateVideoAdInput - Input type for the video generation flow.
  * - GenerateVideoAdOutput - Output type for the video generation flow.
  */
@@ -18,7 +18,7 @@ const GenerateVideoAdInputSchema = z.object({
 export type GenerateVideoAdInput = z.infer<typeof GenerateVideoAdInputSchema>;
 
 const GenerateVideoAdOutputSchema = z.object({
-  videoDataUri: z.string().describe('The generated silent video as a data URI.'),
+  videoDataUri: z.string().describe('The generated video as a data URI.'),
 });
 export type GenerateVideoAdOutput = z.infer<typeof GenerateVideoAdOutputSchema>;
 
