@@ -7,8 +7,10 @@
  * - GenerateVideoAdOutput - Output type for the video generation flow.
  */
 
+import { generateVideoHuggingFace } from './generate-video-huggingface';
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+
 
 const GenerateVideoAdInputSchema = z.object({
   script: z.string().describe('The ad script/prompt for the video.'),
@@ -33,48 +35,9 @@ const generateVideoAdFlow = ai.defineFlow(
     outputSchema: GenerateVideoAdOutputSchema,
   },
   async ({script}) => {
-    // 1. Generate a silent video from the script using the Veo model
-    let {operation} = await ai.generate({
-      model: 'googleai/veo-2.0-generate-001',
-      prompt: script,
-      config: {
-        durationSeconds: 5,
-        aspectRatio: '16:9',
-      },
-    });
 
-    if (!operation) {
-      throw new Error('Expected the model to return an operation for video generation.');
-    }
+    const result = await generateVideoHuggingFace({ prompt: script });
 
-    // 2. Poll for video generation completion
-    while (!operation.done) {
-      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
-      operation = await ai.checkOperation(operation);
-    }
-
-    if (operation.error) {
-      throw new Error(`Failed to generate video: ${operation.error.message}`);
-    }
-
-    const silentVideoPart = operation.output?.message?.content.find(p => !!p.media);
-    if (!silentVideoPart?.media) {
-      throw new Error('Failed to find the generated silent video in the operation result.');
-    }
-
-    // 3. Download the silent video
-    const fetch = (await import('node-fetch')).default;
-    const videoDownloadResponse = await fetch(`${silentVideoPart.media.url}&key=${process.env.GEMINI_API_KEY}`);
-    
-    if (!videoDownloadResponse.ok || !videoDownloadResponse.body) {
-        throw new Error('Failed to download the generated silent video.');
-    }
-    
-    const silentVideoBuffer = await videoDownloadResponse.arrayBuffer();
-    
-    // 4. Convert the final video to a data URI
-    const videoDataUri = `data:video/mp4;base64,${Buffer.from(silentVideoBuffer).toString('base64')}`;
-
-    return {videoDataUri};
+    return {videoDataUri: result.videoDataUri};
   }
 );
