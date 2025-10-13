@@ -355,8 +355,8 @@ a.click();
             <div className="mb-4 rounded-full bg-purple-500/10 p-3">
                 <Film className="h-8 w-8 text-purple-500" />
             </div>
-            <h3 className="mb-2 text-xl font-semibold">Generate Video Ad</h3>
-            <p className="mb-4 text-muted-foreground">Animate your visual into a short video. Requires a generated visual and ad content first.</p>
+            <h3 className="mb-2 text-xl font-semibold">Generate Silent Video Ad</h3>
+            <p className="mb-4 text-muted-foreground">Animate your visual into a short, silent video. Requires a generated visual and ad content first.</p>
             <Button onClick={handleGenerateVideo} variant="outline" disabled={!visual || !adContent}>
                 <Sparkles className="mr-2 h-4 w-4" />
                 Generate Video

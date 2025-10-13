@@ -9,10 +9,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import {v4 as uuidv4} from 'uuid';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
 
 const GenerateVideoAdInputSchema = z.object({
   imageDataUri: z.string().describe('The base64 encoded image data URI.'),
