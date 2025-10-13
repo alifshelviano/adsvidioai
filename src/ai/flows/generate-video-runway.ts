@@ -48,15 +48,17 @@ const generateVideoRunwayFlow = ai.defineFlow(
     genkit.log('info', 'Starting RunwayML image-to-video task...');
 
     try {
-      const task = await client.imageToVideo
-        .create({
-          model: 'gen2', // Using gen2 as it is a common model
-          promptImage: imageDataUri,
-          promptText: promptText,
-          ratio: '16:9',
-          duration: 5,
-        })
-        .waitForTaskOutput();
+      // Create the task first
+      const createdTask = await client.imageToVideo.create({
+        model: 'gen2',
+        promptImage: imageDataUri,
+        promptText: promptText,
+        ratio: '16:9',
+        duration: 5,
+      });
+
+      // Then wait for the task to complete
+      const task = await createdTask.waitForTaskOutput();
 
       genkit.log('info', 'RunwayML task completed successfully.');
 
