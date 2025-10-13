@@ -22,7 +22,7 @@ const GeneratePromotionalVisualsOutputSchema = z.object({
   visualDataUri: z
     .string()
     .describe(
-      'A promotional visual for the ad, as a data URI that must include a MIME type and use Base64 encoding. Expected format: \'data:<mimetype>;base64,<encoded_data>\'.' // Corrected typo here
+      'A promotional visual for the ad, as a data URI that must include a MIME type and use Base64 encoding. Expected format: \'data:<mimetype>;base64,<encoded_data>\'.'
     ),
 });
 export type GeneratePromotionalVisualsOutput = z.infer<typeof GeneratePromotionalVisualsOutputSchema>;
@@ -33,25 +33,6 @@ export async function generatePromotionalVisuals(
   return generatePromotionalVisualsFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'generatePromotionalVisualsPrompt',
-  input: {schema: GeneratePromotionalVisualsInputSchema},
-  output: {schema: GeneratePromotionalVisualsOutputSchema},
-  prompt: `You are an expert in creating promotional visuals for advertisements.
-
-  Based on the product information, create a visually appealing image that will capture the attention of the target audience.  The image should be in a data URI format.
-
-  Product Name: {{{productName}}}
-  Product Description: {{{productDescription}}}
-  Brand Name: {{{brandName}}}
-  Target Audience: {{{targetAudience}}}
-
-  Create a promotional visual that is suitable for online advertising.  Make sure the visual includes the product and is eye-catching.
-
-  Output the visual in data URI format. Ensure the data URI includes the correct MIME type and is Base64 encoded.
-  `,
-});
-
 const generatePromotionalVisualsFlow = ai.defineFlow(
   {
     name: 'generatePromotionalVisualsFlow',
@@ -59,11 +40,42 @@ const generatePromotionalVisualsFlow = ai.defineFlow(
     outputSchema: GeneratePromotionalVisualsOutputSchema,
   },
   async input => {
-    const {media} = await ai.generate({
-      model: 'googleai/imagen-4.0-fast-generate-001',
-      prompt: `Create a promotional visual for ${input.productName}, described as ${input.productDescription}, from the brand ${input.brandName}, targeting ${input.targetAudience}.`,
+    const apiKey = process.env.GETIMG_API_KEY;
+    if (!apiKey) {
+      throw new Error('GETIMG_API_KEY is not defined in the environment.');
+    }
+
+    const prompt = `Create a promotional visual for ${input.productName}, described as ${input.productDescription}, from the brand ${input.brandName}, targeting ${input.targetAudience}.`;
+
+    const response = await fetch('https://api.getimg.ai/v1/stable-diffusion/text-to-image', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt: prompt,
+        model: 'stable-diffusion-xl-v1-5',
+        width: 1024,
+        height: 576,
+        output_format: 'jpeg',
+      }),
     });
 
-    return {visualDataUri: media!.url};
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`getimg.ai API request failed with status ${response.status}: ${errorBody}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.image) {
+        throw new Error('No image returned from getimg.ai API.');
+    }
+
+    const visualDataUri = `data:image/jpeg;base64,${data.image}`;
+
+    return {visualDataUri: visualDataUri};
   }
 );
