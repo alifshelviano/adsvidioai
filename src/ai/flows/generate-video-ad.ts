@@ -11,7 +11,6 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateVideoAdInputSchema = z.object({
-  imageDataUri: z.string().describe('The base64 encoded image data URI.'),
   script: z.string().describe('The ad script/prompt for the video.'),
 });
 export type GenerateVideoAdInput = z.infer<typeof GenerateVideoAdInputSchema>;
@@ -33,21 +32,11 @@ const generateVideoAdFlow = ai.defineFlow(
     inputSchema: GenerateVideoAdInputSchema,
     outputSchema: GenerateVideoAdOutputSchema,
   },
-  async ({imageDataUri, script}) => {
-    // 1. Generate a silent video from the image using the Veo model
+  async ({script}) => {
+    // 1. Generate a silent video from the script using the Veo model
     let {operation} = await ai.generate({
       model: 'googleai/veo-2.0-generate-001',
-      prompt: [
-        {
-          text: `Animate this image subtly for an ad. Prompt: ${script}`,
-        },
-        {
-          media: {
-            contentType: imageDataUri.split(':')[1].split(';')[0],
-            url: imageDataUri,
-          },
-        },
-      ],
+      prompt: script,
       config: {
         durationSeconds: 5,
         aspectRatio: '16:9',

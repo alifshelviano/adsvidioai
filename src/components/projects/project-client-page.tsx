@@ -135,11 +135,10 @@ export function ProjectClientPage({ project }: { project: Project }) {
   };
 
   const handleGenerateVideo = async () => {
-    if (!visual || !adContent) return;
-    setLoading((prev) => ({ ...prev, video: true }));
+    if (!adContent) return;
+    setLoading(prev => ({ ...prev, video: true }));
     try {
       const result = await generateVideoAd({
-        imageDataUri: visual,
         script: adContent.adCopy,
       });
       setVideo(result.videoDataUri);
@@ -151,7 +150,7 @@ export function ProjectClientPage({ project }: { project: Project }) {
         description: `Could not generate video. ${error.message}`,
       });
     } finally {
-      setLoading((prev) => ({ ...prev, video: false }));
+      setLoading(prev => ({ ...prev, video: false }));
     }
   };
   
@@ -356,8 +355,8 @@ a.click();
                 <Film className="h-8 w-8 text-purple-500" />
             </div>
             <h3 className="mb-2 text-xl font-semibold">Generate Silent Video Ad</h3>
-            <p className="mb-4 text-muted-foreground">Animate your visual into a short, silent video. Requires a generated visual and ad content first.</p>
-            <Button onClick={handleGenerateVideo} variant="outline" disabled={!visual || !adContent}>
+            <p className="mb-4 text-muted-foreground">Create a short, silent video based on your ad copy. Requires generated ad content first.</p>
+            <Button onClick={handleGenerateVideo} variant="outline" disabled={!adContent}>
                 <Sparkles className="mr-2 h-4 w-4" />
                 Generate Video
             </Button>
