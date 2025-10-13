@@ -20,3 +20,8 @@ export type AdContent = {
   hashtags: string;
   captions: string;
 };
+
+export type PromotionalVisual = {
+    imageDataUri: string;
+    revisedPrompt: string;
+}
