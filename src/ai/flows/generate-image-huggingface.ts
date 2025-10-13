@@ -54,7 +54,9 @@ const generateImageHuggingFaceFlow = ai.defineFlow(
             method: "POST",
             body: JSON.stringify({ 
                 sync_mode: true,
-                prompt: `"${prompt}"` 
+                prompt: prompt,
+                height: 1024,
+                width: 576,
             }),
         }
     );
