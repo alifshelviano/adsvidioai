@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Bot, AudioLines, Loader2, Sparkles, Download } from "lucide-react";
+import { Bot, AudioLines, Sparkles, Download, Loader2 } from "lucide-react";
 
 import type { Project, AdContent } from "@/lib/types";
 import {
@@ -115,7 +115,7 @@ ${content.hashtags}
     a.href = dataUri;
     a.download = filename;
     document.body.appendChild(a);
-    a.click();
+a.click();
     document.body.removeChild(a);
   };
 
@@ -209,7 +209,7 @@ ${content.hashtags}
             <h3 className="mb-2 text-xl font-semibold">Generate Voice Narration</h3>
             <p className="mb-4 text-muted-foreground">Convert your ad script into a professional voice-over. Requires generated ad content first.</p>
             <Button onClick={handleGenerateNarration} variant="outline" disabled={!adContent}>
-                <Sparkles className="mr-2 h-4 w-4" />
+                {loading.narration ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                 Generate
             </Button>
         </div>
