@@ -43,7 +43,7 @@ const generateVideoRunwayFlow = ai.defineFlow(
       throw new Error('RUNWAYML_API_KEY is not defined in the environment.');
     }
 
-    const client = new RunwayML({ runway_api_key: apiKey });
+    const client = new RunwayML();
 
     genkit.log('info', 'Starting RunwayML image-to-video task...');
 
