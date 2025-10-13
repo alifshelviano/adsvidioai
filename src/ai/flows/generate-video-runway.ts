@@ -48,17 +48,16 @@ const generateVideoRunwayFlow = ai.defineFlow(
     genkit.log('info', 'Starting RunwayML image-to-video task...');
 
     try {
-      // Create the task first
-      const createdTask = await client.imageToVideo.create({
-        model: 'gen2',
-        promptImage: imageDataUri,
-        promptText: promptText,
-        ratio: '16:9',
-        duration: 5,
-      });
-
-      // Then wait for the task to complete
-      const task = await createdTask.waitForTaskOutput();
+      // Create the task and wait for it to complete.
+      const task = await client.imageToVideo
+        .create({
+          model: 'gen2',
+          promptImage: imageDataUri,
+          promptText: promptText,
+          ratio: '16:9',
+          duration: 5,
+        })
+        .waitForTaskOutput();
 
       genkit.log('info', 'RunwayML task completed successfully.');
 
@@ -75,7 +74,7 @@ const generateVideoRunwayFlow = ai.defineFlow(
         throw new Error(`RunwayML video generation failed: ${error.message}`);
       } else {
         genkit.log('error', 'An unexpected error occurred with RunwayML.', error);
-        throw error;
+        throw error as Error;
       }
     }
   }
