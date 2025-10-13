@@ -9,7 +9,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import RunwayML, { TaskFailedError } from '@runwayml/sdk';
+import { RunwayML, TaskFailedError } from '@runwayml/sdk';
 import { genkit } from 'genkit';
 
 const GenerateVideoRunwayInputSchema = z.object({
