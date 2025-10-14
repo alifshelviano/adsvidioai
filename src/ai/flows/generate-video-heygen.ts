@@ -84,13 +84,13 @@ const generateVideoHeygenFlow = ai.defineFlow(
         {
           character: {
             type: 'avatar',
-            avatar_id: 'Daisy-inskirt-20220818', // Default public avatar
+            avatar_id: 'Kristin_public_3_20240108',
             avatar_style: 'normal',
           },
           voice: {
             type: 'text',
             input_text: promptText,
-            voice_id: '2d5b0e6cf36f460aa7fc47e3eee4ba54' // A standard female voice
+            voice_id: '2f72ee82b83d4b00af16c4771d611752'
           },
         },
       ],
