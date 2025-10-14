@@ -72,6 +72,7 @@ const generateVideoHeygenFlow = ai.defineFlow(
     if (!apiKey) {
       throw new Error('HEYGEN_API_KEY is not defined in the environment.');
     }
+    console.log(`Using HeyGen API Key starting with: ${apiKey.substring(0, 4)}`);
 
     const url = 'https://api.heygen.com/v2/video/generate';
     const headers = {

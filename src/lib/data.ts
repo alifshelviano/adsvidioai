@@ -54,6 +54,6 @@ export const projects: Project[] = [
   },
 ];
 
-export const getProjectById = (id: string): Project | undefined => {
+export const getProjectById = async (id: string): Promise<Project | undefined> => {
     return projects.find(p => p.id === id);
 }
