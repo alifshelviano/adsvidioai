@@ -48,12 +48,12 @@ async function uploadImageToHeygen(imageUrl: string, apiKey: string): Promise<st
   }
 
   const uploadData = await uploadResponse.json();
-  if (!uploadData.id) {
+  if (!uploadData.data?.id) {
     throw new Error('HeyGen asset upload did not return an asset ID.');
   }
   
-  genkit.log('info', `HeyGen asset uploaded with ID: ${uploadData.id}`);
-  return uploadData.id;
+  genkit.log('info', `HeyGen asset uploaded with ID: ${uploadData.data.id}`);
+  return uploadData.data.id;
 }
 
 
@@ -136,7 +136,7 @@ const generateVideoHeygenFlow = ai.defineFlow(
           }
         },
       ],
-      test: true, // Use test mode to avoid consuming credits
+      test: true,
       dimension: {
         width: 1280,
         height: 720,
