@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Bot, AudioLines, Sparkles, Download, Loader2, Video, Clapperboard } from "lucide-react";
+import { Bot, AudioLines, Sparkles, Download, Loader2, Video, Clapperboard, Pencil } from "lucide-react";
 
 import type { Project, AdContent, VideoProvider } from "@/lib/types";
 import {
@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 type LoadingStates = {
   adContent: boolean;
@@ -48,6 +49,7 @@ export function ProjectClientPage({ project }: { project: Project }) {
   const [video, setVideo] = useState<GenerateVideoRunwayOutput | GenerateVideoHeygenOutput | null>(null);
   const [videoProvider, setVideoProvider] = useState<VideoProvider>('runway');
   const [videoStatus, setVideoStatus] = useState<string | null>(null);
+  const [videoScript, setVideoScript] = useState<string>('');
 
 
   const [loading, setLoading] = useState<LoadingStates>({
@@ -56,6 +58,12 @@ export function ProjectClientPage({ project }: { project: Project }) {
     visual: false,
     video: false,
   });
+
+  useEffect(() => {
+    if (adContent?.adCopy) {
+      setVideoScript(adContent.adCopy);
+    }
+  }, [adContent]);
 
   const handleGenerateAdContent = async () => {
     setLoading((prev) => ({ ...prev, adContent: true }));
@@ -122,7 +130,14 @@ export function ProjectClientPage({ project }: { project: Project }) {
   };
 
   const handleGenerateVideo = async () => {
-    if (!adContent?.adCopy) return;
+    if (!videoScript) {
+        toast({
+            variant: 'destructive',
+            title: 'Missing Script',
+            description: 'Please provide a script for the video.',
+        });
+        return;
+    }
     setLoading(prev => ({ ...prev, video: true }));
     setVideo(null); // Reset previous video
     setVideoStatus(null);
@@ -142,12 +157,12 @@ export function ProjectClientPage({ project }: { project: Project }) {
         setVideoStatus("Calling RunwayML API...");
         result = await generateVideoRunway({
           imageDataUri: visual.imageDataUri,
-          promptText: adContent.adCopy,
+          promptText: videoScript,
         });
       } else { // heygen
         setVideoStatus("Calling HeyGen API... This may take up to a minute or two.");
         result = await generateVideoHeygen({
-            promptText: adContent.adCopy,
+            promptText: videoScript,
             productImageUrl: project.product.imageUrl,
         });
       }
@@ -337,20 +352,51 @@ a.click();
 
   const renderVideoAd = () => {
     const isRunway = videoProvider === 'runway';
-    const isRunwayReady = isRunway && adContent && visual;
-    const isHeygenReady = !isRunway && adContent;
+    const isRunwayReady = isRunway && videoScript && visual;
+    const isHeygenReady = !isRunway && videoScript;
+
+    if (!adContent) {
+        return (
+             <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-12 text-center">
+                <div className="mb-4 rounded-full bg-secondary p-3">
+                    <Video className="h-8 w-8 text-secondary-foreground" />
+                </div>
+                <h3 className="mb-2 text-xl font-semibold">Generate Video Ad</h3>
+                <p className="mb-4 text-muted-foreground">Please generate Ad Content first to create a video script.</p>
+                <Button disabled={true} variant="outline">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Generate Video
+                </Button>
+            </div>
+        )
+    }
 
     return (
       <div className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Video Generation</CardTitle>
-            <CardDescription>Choose a provider and generate a video ad from your content.</CardDescription>
+            <CardDescription>Choose a provider, edit your script, and generate a video ad.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
               <div className="space-y-2">
+                <Label htmlFor="video-script" className="flex items-center gap-2">
+                    <Pencil className="h-4 w-4" />
+                    Video Script
+                </Label>
+                <Textarea
+                  id="video-script"
+                  value={videoScript}
+                  onChange={(e) => setVideoScript(e.target.value)}
+                  placeholder="Enter your video script here..."
+                  className="min-h-[120px]"
+                  disabled={loading.video}
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="video-provider">Video Provider</Label>
-                <Select value={videoProvider} onValueChange={(value) => setVideoProvider(value as VideoProvider)}>
+                <Select value={videoProvider} onValueChange={(value) => setVideoProvider(value as VideoProvider)} disabled={loading.video}>
                   <SelectTrigger id="video-provider">
                     <SelectValue placeholder="Select a provider" />
                   </SelectTrigger>
@@ -359,13 +405,14 @@ a.click();
                     <SelectItem value="heygen">HeyGen (Avatar from Text)</SelectItem>
                   </SelectContent>
                 </Select>
+                 {videoProvider === 'runway' && <p className="text-sm text-muted-foreground">Requires a generated visual.</p>}
+                 {videoProvider === 'heygen' && <p className="text-sm text-muted-foreground">Uses the product image as background.</p>}
               </div>
-              <Button onClick={handleGenerateVideo} className="w-full" disabled={loading.video || !(isRunwayReady || isHeygenReady)}>
+              <Button onClick={handleGenerateVideo} className="w-full" disabled={loading.video || (isRunway && !isRunwayReady) || (!isRunway && !isHeygenReady)}>
                 {loading.video ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                 Generate Video with {videoProvider === 'runway' ? 'RunwayML' : 'HeyGen'}
               </Button>
-              {videoProvider === 'runway' && <p className="text-sm text-muted-foreground">Requires generated Ad Content and a Visual.</p>}
-              {videoProvider === 'heygen' && <p className="text-sm text-muted-foreground">Requires generated Ad Content and the product image.</p>}
+
           </CardContent>
         </Card>
 
@@ -420,7 +467,7 @@ a.click();
             {loading.visual && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Visuals
         </TabsTrigger>
-        <TabsTrigger value="video" disabled={loading.video}>
+        <TabsTrigger value="video" disabled={!adContent || loading.video}>
             {loading.video && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Video Ad
         </TabsTrigger>
