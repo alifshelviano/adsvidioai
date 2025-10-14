@@ -38,8 +38,7 @@ const generateVideoRunwayFlow = ai.defineFlow(
     outputSchema: GenerateVideoRunwayOutputSchema,
   },
   async ({ imageDataUri, promptText }) => {
-    const apiKey = process.env.RUNWAYML_API_KEY;
-    if (!apiKey) {
+    if (!process.env.RUNWAYML_API_KEY) {
       throw new Error('RUNWAYML_API_KEY is not defined in the environment.');
     }
 
