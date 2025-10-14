@@ -45,7 +45,7 @@ export function ProjectClientPage({ project }: { project: Project }) {
   const [adContent, setAdContent] = useState<AdContent | null>(null);
   const [narration, setNarration] = useState<string | null>(null);
   const [visual, setVisual] = useState<GeneratePromotionalVisualOutput | null>(null);
-  const [video, setVideo] = useState<GenerateVideoRunwayOutput | null>(null);
+  const [video, setVideo] = useState<GenerateVideoRunwayOutput | GenerateVideoHeygenOutput | null>(null);
   const [videoProvider, setVideoProvider] = useState<VideoProvider>('runway');
   const [videoStatus, setVideoStatus] = useState<string | null>(null);
 
@@ -182,7 +182,7 @@ ${content.hashtags}
     a.href = url;
     a.download = "ad_content.txt";
     document.body.appendChild(a);
-    a.click();
+a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }

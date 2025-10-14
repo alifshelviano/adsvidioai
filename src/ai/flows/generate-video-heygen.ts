@@ -89,7 +89,7 @@ const generateVideoHeygenFlow = ai.defineFlow(
           },
           voice: {
             type: 'text',
-            text: promptText,
+            input_text: promptText,
           },
         },
       ],
