@@ -9,7 +9,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { genkit } from 'genkit';
 
 const GenerateVideoHeygenInputSchema = z.object({
   promptText: z.string().describe('The text prompt/script for the video.'),
@@ -31,17 +30,17 @@ async function pollVideoStatus(videoId: string, apiKey: string): Promise<string>
   while (true) {
     await new Promise(resolve => setTimeout(resolve, 10000)); // Poll every 10 seconds
 
-    genkit.log('info', `Polling HeyGen video status for ID: ${videoId}`);
+    console.log(`Polling HeyGen video status for ID: ${videoId}`);
     const statusResponse = await fetch(pollUrl, { headers });
 
     if (!statusResponse.ok) {
       const errorBody = await statusResponse.text();
-      genkit.log('error', `HeyGen polling failed: ${statusResponse.status} ${errorBody}`);
+      console.error(`HeyGen polling failed: ${statusResponse.status} ${errorBody}`);
       continue; // Continue polling even if one check fails
     }
 
     const statusData = await statusResponse.json();
-    genkit.log('info', 'HeyGen status poll response:', statusData);
+    console.log('HeyGen status poll response:', statusData);
     
     const videoStatus = statusData.data.status;
     if (videoStatus === 'completed') {
@@ -102,7 +101,7 @@ const generateVideoHeygenFlow = ai.defineFlow(
       },
     });
 
-    genkit.log('info', 'Starting HeyGen video generation task...');
+    console.log('Starting HeyGen video generation task...');
     const response = await fetch(url, { method: 'POST', headers, body });
 
     if (!response.ok) {
@@ -117,7 +116,7 @@ const generateVideoHeygenFlow = ai.defineFlow(
       throw new Error('HeyGen API did not return a video ID.');
     }
 
-    genkit.log('info', `HeyGen task started with video ID: ${videoId}. Now polling for completion...`);
+    console.log(`HeyGen task started with video ID: ${videoId}. Now polling for completion...`);
 
     const videoUrl = await pollVideoStatus(videoId, apiKey);
     
