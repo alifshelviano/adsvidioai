@@ -162,8 +162,7 @@ export function ProjectClientPage({ project }: { project: Project }) {
       } else { // heygen
         setVideoStatus("Calling HeyGen API... This may take up to a minute or two.");
         result = await generateVideoHeygen({
-            promptText: videoScript,
-            productImageUrl: project.product.imageUrl,
+            promptText: videoScript
         });
       }
       setVideo(result);
@@ -406,7 +405,7 @@ a.click();
                   </SelectContent>
                 </Select>
                  {videoProvider === 'runway' && <p className="text-sm text-muted-foreground">Requires a generated visual.</p>}
-                 {videoProvider === 'heygen' && <p className="text-sm text-muted-foreground">Uses the product image as background.</p>}
+                 {videoProvider === 'heygen' && <p className="text-sm text-muted-foreground">Uses a default avatar and the ad script.</p>}
               </div>
               <Button onClick={handleGenerateVideo} className="w-full" disabled={loading.video || (isRunway && !isRunwayReady) || (!isRunway && !isHeygenReady)}>
                 {loading.video ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}

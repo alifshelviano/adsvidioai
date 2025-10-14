@@ -13,7 +13,6 @@ import { genkit } from 'genkit';
 
 const GenerateVideoHeygenInputSchema = z.object({
   promptText: z.string().describe('The text prompt/script for the video.'),
-  productImageUrl: z.string().url().describe('The URL of the product image to use as a background.'),
 });
 
 export type GenerateVideoHeygenInput = z.infer<typeof GenerateVideoHeygenInputSchema>;
@@ -23,38 +22,6 @@ const GenerateVideoHeygenOutputSchema = z.object({
 });
 
 export type GenerateVideoHeygenOutput = z.infer<typeof GenerateVideoHeygenOutputSchema>;
-
-async function uploadImageToHeygen(imageUrl: string, apiKey: string): Promise<string> {
-  genkit.log('info', `Fetching image from URL: ${imageUrl}`);
-  const imageResponse = await fetch(imageUrl);
-  if (!imageResponse.ok) {
-    throw new Error(`Failed to fetch image from URL: ${imageResponse.statusText}`);
-  }
-  const imageBuffer = await imageResponse.arrayBuffer();
-  const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
-  
-  genkit.log('info', `Uploading image to HeyGen...`);
-  const uploadUrl = "https://upload.heygen.com/v1/asset";
-  const headers = {
-      "Content-Type": contentType,
-      "X-Api-Key": apiKey,
-  };
-
-  const uploadResponse = await fetch(uploadUrl, { method: 'POST', headers, body: Buffer.from(imageBuffer) });
-
-  if (!uploadResponse.ok) {
-    const errorBody = await uploadResponse.text();
-    throw new Error(`HeyGen asset upload failed: ${uploadResponse.status} ${errorBody}`);
-  }
-
-  const uploadData = await uploadResponse.json();
-  if (!uploadData.data?.id) {
-    throw new Error('HeyGen asset upload did not return an asset ID.');
-  }
-  
-  genkit.log('info', `HeyGen asset uploaded with ID: ${uploadData.data.id}`);
-  return uploadData.data.id;
-}
 
 
 async function pollVideoStatus(videoId: string, apiKey: string): Promise<string> {
@@ -101,16 +68,12 @@ const generateVideoHeygenFlow = ai.defineFlow(
     inputSchema: GenerateVideoHeygenInputSchema,
     outputSchema: GenerateVideoHeygenOutputSchema,
   },
-  async ({ promptText, productImageUrl }) => {
+  async ({ promptText }) => {
     const apiKey = process.env.HEYGEN_API_KEY;
     if (!apiKey) {
       throw new Error('HEYGEN_API_KEY is not defined in the environment.');
     }
-    
-    // 1. Upload image to get an asset ID
-    const imageAssetId = await uploadImageToHeygen(productImageUrl, apiKey);
 
-    // 2. Generate video using the asset ID
     const url = 'https://api.heygen.com/v2/video/generate';
     const headers = {
       'accept': 'application/json',
@@ -128,12 +91,8 @@ const generateVideoHeygenFlow = ai.defineFlow(
           voice: {
             type: 'text',
             input_text: promptText,
+            voice_id: '2d5b0e6cf36f460aa7fc47e3eee4ba54' // A standard female voice
           },
-          background: {
-            type: 'image',
-            image_asset_id: imageAssetId,
-            fit: 'cover',
-          }
         },
       ],
       test: true,
