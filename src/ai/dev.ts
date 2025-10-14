@@ -8,3 +8,4 @@ import '@/ai/flows/extract-product-info.ts';
 import '@/ai/flows/review-places.ts';
 import '@/ai/flows/generate-promotional-visual.ts';
 import '@/ai/flows/generate-video-runway.ts';
+import '@/ai/flows/generate-video-heygen.ts';

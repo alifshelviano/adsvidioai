@@ -25,3 +25,5 @@ export type PromotionalVisual = {
     imageDataUri: string;
     revisedPrompt: string;
 }
+
+export type VideoProvider = 'runway' | 'heygen';
