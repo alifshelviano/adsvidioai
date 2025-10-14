@@ -145,9 +145,10 @@ export function ProjectClientPage({ project }: { project: Project }) {
           promptText: adContent.adCopy,
         });
       } else { // heygen
-        setVideoStatus("Calling HeyGen API... This may take a minute.");
+        setVideoStatus("Calling HeyGen API... This may take up to a minute or two.");
         result = await generateVideoHeygen({
             promptText: adContent.adCopy,
+            productImageUrl: project.product.imageUrl,
         });
       }
       setVideo(result);
@@ -364,7 +365,7 @@ a.click();
                 Generate Video with {videoProvider === 'runway' ? 'RunwayML' : 'HeyGen'}
               </Button>
               {videoProvider === 'runway' && <p className="text-sm text-muted-foreground">Requires generated Ad Content and a Visual.</p>}
-              {videoProvider === 'heygen' && <p className="text-sm text-muted-foreground">Requires generated Ad Content.</p>}
+              {videoProvider === 'heygen' && <p className="text-sm text-muted-foreground">Requires generated Ad Content and the product image.</p>}
           </CardContent>
         </Card>
 
