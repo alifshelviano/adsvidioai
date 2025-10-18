@@ -1,0 +1,173 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { PlusCircle, Loader2, Link, Pencil } from "lucide-react";
+import { extractProductInfo, ExtractProductInfoOutput } from "@/ai/flows/extract-product-info";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+
+
+export function NewProjectDialog() {
+  const [open, setOpen] = useState(false);
+  const [url, setUrl] = useState("");
+  const [manualTitle, setManualTitle] = useState("");
+  const [manualDescription, setManualDescription] = useState("");
+  const [manualPrice, setManualPrice] = useState("");
+  const [manualImageUrl, setManualImageUrl] = useState("");
+
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleCreateFromUrl = async () => {
+    if (!url) {
+      toast({
+        variant: "destructive",
+        title: "URL is required",
+        description: "Please enter a product URL to continue.",
+      });
+      return;
+    }
+    setLoading(true);
+    try {
+      const productInfo: ExtractProductInfoOutput = await extractProductInfo({ url });
+      
+      const query = new URLSearchParams({
+        title: productInfo.title,
+        description: productInfo.description,
+        price: productInfo.price.toString(),
+        imageUrl: productInfo.imageUrl,
+      });
+
+      router.push(`/projects/new?${query.toString()}`);
+      setOpen(false);
+
+    } catch (error) {
+      console.error("Failed to extract product info:", error);
+      toast({
+        variant: "destructive",
+        title: "Extraction Failed",
+        description: "Could not extract product information from the URL. Please check the URL and try again.",
+      });
+    } finally {
+      setLoading(false);
+      setUrl("");
+    }
+  };
+
+  const handleCreateManually = () => {
+    if (!manualTitle || !manualDescription || !manualPrice || !manualImageUrl) {
+        toast({
+            variant: "destructive",
+            title: "All fields are required",
+            description: "Please fill out all the fields to create a project.",
+        });
+        return;
+    }
+
+    setLoading(true);
+    const query = new URLSearchParams({
+        title: manualTitle,
+        description: manualDescription,
+        price: manualPrice,
+        imageUrl: manualImageUrl,
+    });
+
+    router.push(`/projects/new?${query.toString()}`);
+    setLoading(false);
+    setOpen(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          New Project
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>Create New Project</DialogTitle>
+          <DialogDescription>
+            Start a new project by either extracting from a URL or entering details manually.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <Tabs defaultValue="url">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="url"><Link className="mr-2 h-4 w-4" />From URL</TabsTrigger>
+                <TabsTrigger value="manual"><Pencil className="mr-2 h-4 w-4" />Manually</TabsTrigger>
+            </TabsList>
+            <TabsContent value="url">
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="url" className="text-right">
+                        Product URL
+                        </Label>
+                        <Input
+                        id="url"
+                        placeholder="https://shopee.com/product/..."
+                        className="col-span-3"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        disabled={loading}
+                        />
+                    </div>
+                    <p className="text-center text-sm text-muted-foreground">
+                        Supported marketplaces: Shopee, Tokopedia, Amazon.
+                    </p>
+                </div>
+                 <DialogFooter>
+                    <Button onClick={handleCreateFromUrl} disabled={loading} className="w-full">
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {loading ? "Extracting..." : "Create From URL"}
+                    </Button>
+                </DialogFooter>
+            </TabsContent>
+            <TabsContent value="manual">
+                 <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="title" className="text-right">Title</Label>
+                        <Input id="title" placeholder="e.g. 'Stylish Coffee Mug'" className="col-span-3" value={manualTitle} onChange={e => setManualTitle(e.target.value)} />
+                    </div>
+                    <div className="grid grid-cols-4 items-start gap-4">
+                        <Label htmlFor="description" className="text-right pt-2">Description</Label>
+                        <Textarea id="description" placeholder="A short description of the product." className="col-span-3" value={manualDescription} onChange={e => setManualDescription(e.target.value)} />
+                    </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="price" className="text-right">Price</Label>
+                        <Input id="price" type="number" placeholder="19.99" className="col-span-3" value={manualPrice} onChange={e => setManualPrice(e.target.value)} />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="imageUrl" className="text-right">Image URL</Label>
+                        <Input id="imageUrl" placeholder="https://picsum.photos/seed/..." className="col-span-3" value={manualImageUrl} onChange={e => setManualImageUrl(e.target.value)} />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleCreateManually} disabled={loading} className="w-full">
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Create Manually
+                    </Button>
+                </DialogFooter>
+            </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  );
+}
