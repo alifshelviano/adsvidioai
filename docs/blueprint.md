@@ -1,4 +1,4 @@
-# **App Name**: AdForge AI
+# **App Name**: Biklan AI
 
 ## Core Features:
 

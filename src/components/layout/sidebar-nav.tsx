@@ -34,7 +34,7 @@ export function SidebarNav() {
       <SidebarHeader>
         <div className="flex items-center gap-2 p-2">
           <Bot className="h-8 w-8 text-primary" />
-          <span className="text-lg font-semibold tracking-tighter">AdForge AI</span>
+          <span className="text-lg font-semibold tracking-tighter">Biklan AI</span>
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -58,7 +58,7 @@ export function SidebarNav() {
       <SidebarFooter>
         <div className="hidden flex-col gap-2 p-2 text-sm text-muted-foreground group-data-[collapsible=icon]:flex">
             <Bot className="h-8 w-8 self-center" />
-            <p className="text-center text-xs">AdForge AI</p>
+            <p className="text-center text-xs">Biklan AI</p>
         </div>
       </SidebarFooter>
     </Sidebar>

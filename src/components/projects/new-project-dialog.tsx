@@ -1,6 +1,6 @@
-"use client";
+'use client'
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PlusCircle, Loader2, Link, Pencil } from "lucide-react";
 import { extractProductInfo, ExtractProductInfoOutput } from "@/ai/flows/extract-product-info";
@@ -20,19 +20,46 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import type { Project } from "@/lib/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+interface NewProjectDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  project?: Project | null;
+  onProjectCreated?: () => void;
+}
 
-export function NewProjectDialog() {
-  const [open, setOpen] = useState(false);
+export function NewProjectDialog({ 
+  open: controlledOpen,
+  onOpenChange: setControlledOpen,
+  project,
+  onProjectCreated 
+}: NewProjectDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = setControlledOpen ?? setInternalOpen;
+  const isEditMode = !!project;
+
   const [url, setUrl] = useState("");
   const [manualTitle, setManualTitle] = useState("");
   const [manualDescription, setManualDescription] = useState("");
   const [manualPrice, setManualPrice] = useState("");
   const [manualImageUrl, setManualImageUrl] = useState("");
+  const [avatar, setAvatar] = useState("Abigail_standing_office_front");
 
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isEditMode && project) {
+      setManualTitle(project.title || "");
+      setManualDescription(project.description || "");
+      setManualPrice(project.price?.toString() || "");
+      setManualImageUrl(project.imageUrl || "");
+    }
+  }, [project, isEditMode]);
 
   const handleCreateFromUrl = async () => {
     if (!url) {
@@ -52,6 +79,7 @@ export function NewProjectDialog() {
         description: productInfo.description,
         price: productInfo.price.toString(),
         imageUrl: productInfo.imageUrl,
+        avatar: avatar,
       });
 
       router.push(`/projects/new?${query.toString()}`);
@@ -70,50 +98,96 @@ export function NewProjectDialog() {
     }
   };
 
-  const handleCreateManually = () => {
-    if (!manualTitle || !manualDescription || !manualPrice || !manualImageUrl) {
+  const handleSubmit = async () => {
+    if (!manualTitle || !manualDescription) {
         toast({
             variant: "destructive",
-            title: "All fields are required",
-            description: "Please fill out all the fields to create a project.",
+            title: "Title and description are required",
+            description: "Please fill out at least the title and description to create a project.",
         });
         return;
     }
 
     setLoading(true);
-    const query = new URLSearchParams({
-        title: manualTitle,
-        description: manualDescription,
-        price: manualPrice,
-        imageUrl: manualImageUrl,
-    });
 
-    router.push(`/projects/new?${query.toString()}`);
-    setLoading(false);
-    setOpen(false);
+    if(isEditMode) {
+      try {
+        const response = await fetch(`/api/videos/${project?._id}`,
+          {
+            method: "PUT",
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              title: manualTitle,
+              description: manualDescription,
+              price: parseFloat(manualPrice),
+              imageUrl: manualImageUrl,
+             })
+          }
+        );
+  
+        if (response.ok) {
+          toast({
+            title: "Project Updated",
+            description: "Your project has been successfully updated.",
+          });
+          setOpen(false);
+          onProjectCreated?.();
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "Failed to update the project.",
+          });
+        }
+      } catch (error) {
+        console.error("Error updating project:", error);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      const query = new URLSearchParams({
+          title: manualTitle,
+          description: manualDescription,
+          ...(manualPrice && { price: manualPrice }),
+          ...(manualImageUrl && { imageUrl: manualImageUrl }),
+          avatar: avatar,
+      });
+
+      router.push(`/projects/new?${query.toString()}`);
+      setLoading(false);
+      setOpen(false);
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          New Project
-        </Button>
-      </DialogTrigger>
+      {!isEditMode && (
+        <DialogTrigger asChild>
+          <Button>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            New Project
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>Create New Project</DialogTitle>
-          <DialogDescription>
-            Start a new project by either extracting from a URL or entering details manually.
-          </DialogDescription>
+          <DialogTitle>{isEditMode ? 'Edit Project' : 'Create New Project'}</DialogTitle>
+          {!isEditMode && (
+            <DialogDescription>
+              Start a new project by either extracting from a URL or entering details manually.
+            </DialogDescription>
+          )}
         </DialogHeader>
         
-        <Tabs defaultValue="url">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="url"><Link className="mr-2 h-4 w-4" />From URL</TabsTrigger>
-                <TabsTrigger value="manual"><Pencil className="mr-2 h-4 w-4" />Manually</TabsTrigger>
-            </TabsList>
+        <Tabs defaultValue={isEditMode ? "manual" : "url"}>
+            {!isEditMode && (
+              <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="url"><Link className="mr-2 h-4 w-4" />From URL</TabsTrigger>
+                  <TabsTrigger value="manual"><Pencil className="mr-2 h-4 w-4" />Manually</TabsTrigger>
+              </TabsList>
+            )}
             <TabsContent value="url">
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
@@ -158,11 +232,23 @@ export function NewProjectDialog() {
                         <Label htmlFor="imageUrl" className="text-right">Image URL</Label>
                         <Input id="imageUrl" placeholder="https://picsum.photos/seed/..." className="col-span-3" value={manualImageUrl} onChange={e => setManualImageUrl(e.target.value)} />
                     </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="avatar" className="text-right">Avatar</Label>
+                        <Select onValueChange={setAvatar} defaultValue={avatar}>
+                            <SelectTrigger className="col-span-3">
+                                <SelectValue placeholder="Select an avatar" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Abigail_standing_office_front">Wanita</SelectItem>
+                                <SelectItem value="Berat_standing_indoor_side">Pria</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
                 <DialogFooter>
-                    <Button onClick={handleCreateManually} disabled={loading} className="w-full">
+                    <Button onClick={handleSubmit} disabled={loading} className="w-full">
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Create Manually
+                        {isEditMode ? 'Save Changes' : 'Create Manually'}
                     </Button>
                 </DialogFooter>
             </TabsContent>

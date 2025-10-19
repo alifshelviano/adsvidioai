@@ -1,22 +1,70 @@
 
 import { NextResponse } from 'next/server';
-
-// In a real application, you would fetch video data from a database
-const videos = [
-  { id: 1, title: 'My First Video', description: 'This is a description of my first video.', url: '/videos/my-first-video.mp4' },
-  { id: 2, title: 'Another Awesome Video', description: 'A description for the second video.', url: '/videos/another-awesome-video.mp4' },
-];
+import clientPromise from '@/lib/mongodb';
+import { ObjectId } from 'mongodb';
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const id = parseInt(params.id, 10);
-  const video = videos.find((v) => v.id === id);
+  try {
+    const client = await clientPromise;
+    const db = client.db();
+    const video = await db.collection('videos').findOne({ _id: new ObjectId(params.id) });
 
-  if (video) {
-    return NextResponse.json(video);
-  } else {
-    return NextResponse.json({ error: 'Video not found' }, { status: 404 });
+    if (video) {
+      return NextResponse.json(video);
+    } else {
+      return NextResponse.json({ error: 'Video not found' }, { status: 404 });
+    }
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: 'Error fetching video' }, { status: 500 });
+  }
+}
+
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { title, description, url } = await request.json();
+    const client = await clientPromise;
+    const db = client.db();
+
+    const result = await db.collection('videos').updateOne(
+      { _id: new ObjectId(params.id) },
+      { $set: { title, description, url } }
+    );
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json({ error: 'Video not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: 'Video updated successfully' });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: 'Error updating video' }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const client = await clientPromise;
+    const db = client.db();
+
+    const result = await db.collection('videos').deleteOne({ _id: new ObjectId(params.id) });
+
+    if (result.deletedCount === 0) {
+      return NextResponse.json({ error: 'Video not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: 'Video deleted successfully' });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: 'Error deleting video' }, { status: 500 });
   }
 }

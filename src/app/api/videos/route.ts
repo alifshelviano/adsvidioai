@@ -1,35 +1,72 @@
-
 import { NextResponse } from 'next/server';
+import clientPromise from '@/lib/mongodb';
 
-// In-memory "database"
-let videos = [
-  { id: 1, title: 'My First Video', description: 'This is a description of my first video.', url: '/videos/my-first-video.mp4' },
-  { id: 2, title: 'Another Awesome Video', description: 'A description for the second video.', url: '/videos/another-awesome-video.mp4' },
-];
+export async function GET(request: Request) {
+  const userId = request.headers.get('x-user-id');
 
-export async function GET() {
-  return NextResponse.json(videos);
+  if (!userId) {
+    return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
+  }
+
+  try {
+    const client = await clientPromise;
+    const db = client.db();
+    const videos = await db.collection('videos').find({ userId }).sort({ createdAt: -1 }).toArray();
+    
+    // The raw data from the DB is not serializable. 
+    // We need to convert the `_id` field to a string for each project.
+    const serializableVideos = videos.map(video => ({
+      ...video,
+      _id: video._id.toString(),
+      createdAt: video.createdAt.toString(),
+    }));
+
+    return NextResponse.json(serializableVideos);
+
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: 'Error fetching videos' }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
-  try {
-    const { title, description, url } = await request.json();
+  const userId = request.headers.get('x-user-id');
 
-    if (!title || !description || !url) {
-      return NextResponse.json({ error: 'Missing required fields: title, description, url' }, { status: 400 });
+  if (!userId) {
+    return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
+  }
+
+  try {
+    const { title, description, price, imageUrl } = await request.json();
+
+    if (!title || !description) {
+      return NextResponse.json({ error: 'Missing required fields: title, description' }, { status: 400 });
     }
 
+    const client = await clientPromise;
+    const db = client.db();
+    
     const newVideo = {
-      id: videos.length > 0 ? Math.max(...videos.map(v => v.id)) + 1 : 1,
+      userId,
       title,
       description,
-      url,
+      price,
+      imageUrl,
+      createdAt: new Date(),
     };
 
-    videos.push(newVideo);
+    const result = await db.collection('videos').insertOne(newVideo);
 
-    return NextResponse.json(newVideo, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    // Send back the created object with the string ID
+    const createdVideo = {
+        ...newVideo,
+        _id: result.insertedId.toString(),
+        createdAt: newVideo.createdAt.toString(),
+    }
+
+    return NextResponse.json(createdVideo, { status: 201 });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: 'Error creating video' }, { status: 500 });
   }
 }

@@ -1,29 +1,23 @@
-export type Product = {
-  title: string;
-  description: string;
-  price: number;
-  imageUrl: string;
-  imageHint: string;
-};
+import { z } from 'zod';
 
-export type Project = {
-  id: string;
-  name: string;
-  product: Product;
-  createdAt: string;
-  imageUrl: string;
-  imageHint: string;
-};
+export const ProjectSchema = z.object({
+  _id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  price: z.number().optional(),
+  imageUrl: z.string(),
+  videoUrl: z.string().url().optional(),
+  thumbnailUrl: z.string().url().optional(),
+});
 
-export type AdContent = {
-  adCopy: string;
-  hashtags: string;
-  captions: string;
-};
+export type Project = z.infer<typeof ProjectSchema>;
 
-export type PromotionalVisual = {
-    imageDataUri: string;
-    revisedPrompt: string;
-}
+export const AdContentSchema = z.object({
+  adCopy: z.string(),
+  captions: z.string(),
+  hashtags: z.string(),
+});
+
+export type AdContent = z.infer<typeof AdContentSchema>;
 
 export type VideoProvider = 'runway' | 'heygen';

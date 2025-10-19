@@ -21,7 +21,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4 rounded-lg border p-8 text-center">
-          <h1 className="text-2xl font-bold">Welcome to AdForge AI</h1>
+          <h1 className="text-2xl font-bold">Welcome to Biklan AI</h1>
           <p className="text-muted-foreground">Please sign in to access the application.</p>
           <Button onClick={() => signIn('google')}>Sign In with Google</Button>
         </div>

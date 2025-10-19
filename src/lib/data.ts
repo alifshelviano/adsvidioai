@@ -1,59 +1,55 @@
-import type { Project } from "@/lib/types";
-import { placeholderImages } from "@/lib/placeholder-images.json";
+import { ObjectId } from 'mongodb';
+import clientPromise from '@/lib/mongodb';
+import type { Project } from '@/lib/types';
 
-const [
-  project1Image,
-  project2Image,
-  project3Image,
-  product1Image,
-] = placeholderImages;
+// Helper function to serialize project data
+const serializeProject = (project: any): Project => {
+  return {
+    ...project,
+    _id: project._id.toString(),
+    // Ensure createdAt is also a string, just in case it's a Date object
+    createdAt: project.createdAt.toString(), 
+  };
+};
 
+export const getProjectById = async (id: string): Promise<Project | null> => {
+  try {
+    const client = await clientPromise;
+    const db = client.db();
+    
+    if (!ObjectId.isValid(id)) {
+        console.error("Invalid ObjectId format");
+        return null;
+    }
 
-export const projects: Project[] = [
-  {
-    id: "1",
-    name: "Autumn Coffee Blend",
-    product: {
-      title: "Autumn Spice Roast",
-      description: "A warm and inviting coffee blend with notes of cinnamon, nutmeg, and a hint of clove. Perfect for crisp autumn mornings.",
-      price: 18.99,
-      imageUrl: product1Image.imageUrl,
-      imageHint: product1Image.imageHint,
-    },
-    createdAt: "2023-10-26",
-    imageUrl: project1Image.imageUrl,
-    imageHint: project1Image.imageHint,
-  },
-  {
-    id: "2",
-    name: "Wireless ANC Headphones",
-    product: {
-      title: "SoundScape Pro Headphones",
-      description: "Experience immersive audio with our new noise-cancelling headphones. Crystal clear highs, deep bass, and 30-hour battery life.",
-      price: 149.99,
-      imageUrl: "https://picsum.photos/seed/p2/600/400",
-      imageHint: "headphones product"
-    },
-    createdAt: "2023-10-24",
-    imageUrl: project2Image.imageUrl,
-    imageHint: project2Image.imageHint,
-  },
-  {
-    id: "3",
-    name: "Eco-Friendly Yoga Mat",
-    product: {
-      title: "Aura Natural Cork Yoga Mat",
-      description: "Find your balance with our sustainable and non-slip cork yoga mat. Kind to you, and kind to the planet.",
-      price: 79.00,
-      imageUrl: "https://picsum.photos/seed/p3/600/400",
-      imageHint: "yoga mat"
-    },
-    createdAt: "2023-10-22",
-    imageUrl: project3Image.imageUrl,
-    imageHint: project3Image.imageHint,
-  },
-];
+    const project = await db.collection('videos').findOne({ _id: new ObjectId(id) });
 
-export const getProjectById = async (id: string): Promise<Project | undefined> => {
-    return projects.find(p => p.id === id);
-}
+    if (!project) {
+      return null;
+    }
+
+    // The raw project object from the DB is not serializable
+    // because of the `_id` field. We need to convert it to a string.
+    return serializeProject(project);
+
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
+};
+
+export const getAllProjects = async (): Promise<Project[]> => {
+  try {
+    const client = await clientPromise;
+    const db = client.db();
+    const projects = await db.collection('videos').find({}).sort({ createdAt: -1 }).toArray();
+
+    // The raw project objects from the DB are not serializable
+    // because of the s`_id` field. We need to convert them to strings.
+    return projects.map(serializeProject);
+
+  } catch (e) {
+    console.error(e);
+    return [];
+  }
+};

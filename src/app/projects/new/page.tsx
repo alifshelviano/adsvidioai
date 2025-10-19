@@ -1,72 +1,87 @@
-// This is a new file
-
 'use client';
 
-import { useSearchParams, notFound, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { Header } from "@/components/layout/header";
-import { ProjectClientPage } from "@/components/projects/project-client-page";
-import type { Project } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 export default function NewProjectPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [project, setProject] = useState<Project | null>(null);
+  const { toast } = useToast();
+  const { data: session } = useSession();
 
   useEffect(() => {
-    const title = searchParams.get("title");
-    const description = searchParams.get("description");
-    const price = searchParams.get("price");
-    const imageUrl = searchParams.get("imageUrl");
+    const createProject = async () => {
+      const title = searchParams.get("title");
+      const description = searchParams.get("description");
+      const price = searchParams.get("price");
+      const imageUrl = searchParams.get("imageUrl");
+      const userId = session?.user?.id; 
 
-    if (title && description && price && imageUrl) {
-      // In a real app, we would save this to a database and get a real ID
-      const newProject: Project = {
-        id: crypto.randomUUID(),
-        name: title,
-        createdAt: new Date().toISOString(),
-        imageUrl: "https://picsum.photos/seed/new/600/400", // Default project image
-        imageHint: "abstract project",
-        product: {
-          title,
-          description,
-          price: parseFloat(price),
-          imageUrl,
-          imageHint: "product " + title.split(" ").slice(0,2).join(" ").toLowerCase(),
-        },
-      };
-      setProject(newProject);
-      // Optional: Update the URL to a clean one if this were a real saved project
-      // router.replace(`/projects/${newProject.id}`);
-    } else {
-      // If essential params are missing, maybe redirect or show an error
-      // For now, let's redirect to the main projects page after a moment.
-      const timer = setTimeout(() => router.push('/projects'), 3000);
-      return () => clearTimeout(timer);
+      if (!title || !description || !userId) {
+        toast({
+          variant: "destructive",
+          title: "Missing Information",
+          description: "Essential project information is missing. Redirecting...",
+        });
+        const timer = setTimeout(() => router.push('/projects'), 3000);
+        return () => clearTimeout(timer);
+      }
+
+      try {
+        const response = await fetch('/api/videos', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': userId,
+          },
+          body: JSON.stringify({
+            title,
+            description,
+            price: price ? parseFloat(price) : undefined,
+            imageUrl,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save project');
+        }
+
+        toast({
+          title: "Project Created",
+          description: `Successfully created project: ${title}`,
+        });
+
+        router.push('/projects');
+
+      } catch (error) {
+        console.error("Failed to create project:", error);
+        toast({
+          variant: "destructive",
+          title: "Save Failed",
+          description: "Could not save the project to the database. Please try again.",
+        });
+      }
+    };
+
+    if (session) { // Ensure session is loaded before attempting to create the project
+        createProject();
     }
-  }, [searchParams, router]);
 
-  if (!project) {
-    return (
-      <>
-        <Header pageTitle="Creating Project..." />
-        <main className="flex-1 p-4 md:p-6">
-          <div className="space-y-4">
-              <p className="text-center text-muted-foreground">Extracting product data... If you are not redirected, some information might be missing from the URL.</p>
-              <Skeleton className="h-48 w-full" />
-              <Skeleton className="h-24 w-full" />
-          </div>
-        </main>
-      </>
-    );
-  }
+  }, [searchParams, router, toast, session]);
 
   return (
     <>
-      <Header pageTitle={project.name} />
+      <Header pageTitle="Creating Project..." />
       <main className="flex-1 p-4 md:p-6">
-        <ProjectClientPage project={project} />
+        <div className="space-y-4">
+            <p className="text-center text-muted-foreground">Saving your new project to the database...</p>
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-24 w-full" />
+        </div>
       </main>
     </>
   );

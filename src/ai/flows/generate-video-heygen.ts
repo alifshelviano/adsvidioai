@@ -12,46 +12,53 @@ import { z } from 'genkit';
 
 const GenerateVideoHeygenInputSchema = z.object({
   promptText: z.string().describe('The text prompt/script for the video.'),
+  avatarId: z.string().optional().describe('The ID of the avatar to use.'),
 });
 
 export type GenerateVideoHeygenInput = z.infer<typeof GenerateVideoHeygenInputSchema>;
 
 const GenerateVideoHeygenOutputSchema = z.object({
   videoUrl: z.string().url().describe('The URL of the generated video.'),
+  thumbnailUrl: z.string().url().optional().describe('The URL of the video thumbnail.'),
 });
 
 export type GenerateVideoHeygenOutput = z.infer<typeof GenerateVideoHeygenOutputSchema>;
 
-
-async function pollVideoStatus(videoId: string, apiKey: string): Promise<string> {
+async function pollVideoStatus(videoId: string, apiKey: string): Promise<{ videoUrl: string, thumbnailUrl?: string }> {
   const pollUrl = `https://api.heygen.com/v1/video_status.get?video_id=${videoId}`;
   const headers = { 'x-api-key': apiKey };
 
   while (true) {
     await new Promise(resolve => setTimeout(resolve, 10000)); // Poll every 10 seconds
 
-    console.log(`Polling HeyGen video status for ID: ${videoId}`);
-    const statusResponse = await fetch(pollUrl, { headers });
+    try {
+      console.log(`Polling HeyGen video status for ID: ${videoId}`);
+      const statusResponse = await fetch(pollUrl, { headers });
 
-    if (!statusResponse.ok) {
-      const errorBody = await statusResponse.text();
-      console.error(`HeyGen polling failed: ${statusResponse.status} ${errorBody}`);
-      continue; // Continue polling even if one check fails
-    }
-
-    const statusData = await statusResponse.json();
-    console.log('HeyGen status poll response:', statusData);
-    
-    const videoStatus = statusData.data.status;
-    if (videoStatus === 'completed') {
-      if (!statusData.data.video_url) {
-        throw new Error('HeyGen video generation completed but no video URL was returned.');
+      if (!statusResponse.ok) {
+        const errorBody = await statusResponse.text();
+        console.error(`HeyGen polling failed: ${statusResponse.status} ${errorBody}`);
+        continue; 
       }
-      return statusData.data.video_url;
-    } else if (videoStatus === 'failed') {
-      throw new Error(`HeyGen video generation failed. Reason: ${statusData.data.error?.message || 'Unknown error'}`);
+
+      const statusData = await statusResponse.json();
+      console.log('HeyGen status poll response:', statusData);
+      
+      const videoStatus = statusData.data.status;
+      if (videoStatus === 'completed') {
+        if (!statusData.data.video_url) {
+          throw new Error('HeyGen video generation completed but no video URL was returned.');
+        }
+        return { 
+            videoUrl: statusData.data.video_url,
+            thumbnailUrl: statusData.data.thumbnail_url
+        };
+      } else if (videoStatus === 'failed') {
+        throw new Error(`HeyGen video generation failed. Reason: ${statusData.data.error?.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error polling video status:', error);
     }
-    // If status is 'processing' or 'pending', the loop continues.
   }
 }
 
@@ -67,12 +74,38 @@ const generateVideoHeygenFlow = ai.defineFlow(
     inputSchema: GenerateVideoHeygenInputSchema,
     outputSchema: GenerateVideoHeygenOutputSchema,
   },
-  async ({ promptText }) => {
+  async ({ promptText, avatarId }) => {
     const apiKey = process.env.HEYGEN_API_KEY;
     if (!apiKey) {
-      throw new Error('HEYGEN_API_KEY is not defined in the environment.');
+      throw new Error('HEYGEN_API_KEY is not defined in the environment. Please add it to your .env file.');
     }
     console.log(`Using HeyGen API Key starting with: ${apiKey.substring(0, 4)}`);
+
+    const maleAvatarId = "Bojan_standing_businesstraining_front";
+
+    const characterConfig = avatarId === maleAvatarId ? {
+        type: 'avatar',
+        avatar_id: maleAvatarId,
+        avatar_style: 'normal',
+        scale: 3.24,
+        offset: { x: 0, y: 0 },
+    } : {
+        type: 'avatar',
+        avatar_id: 'Abigail_standing_office_front',
+        avatar_style: 'normal',
+        scale: 3.30,
+        offset: { x: 0.00, y: -0.12 },
+    };
+
+    const voiceConfig = avatarId === maleAvatarId ? {
+        type: 'text',
+        input_text: promptText,
+        voice_id: '9e18bbe8306c43da9fd1f598289b03ca',
+    } : {
+        type: 'text',
+        input_text: promptText,
+        voice_id: 'fdeb03e3681d462cb08a9ba7d7a50392',
+    };
 
     const url = 'https://api.heygen.com/v2/video/generate';
     const headers = {
@@ -83,17 +116,9 @@ const generateVideoHeygenFlow = ai.defineFlow(
     const body = JSON.stringify({
       video_inputs: [
         {
-          character: {
-            type: 'avatar',
-            avatar_id: 'Kristin_public_3_20240108',
-            avatar_style: 'normal',
-          },
-          voice: {
-            type: 'text',
-            input_text: promptText,
-            voice_id: '2f72ee82b83d4b00af16c4771d611752'
-          },
-        },
+          character: characterConfig,
+          voice: voiceConfig,
+        }
       ],
       test: true,
       dimension: {
@@ -102,7 +127,7 @@ const generateVideoHeygenFlow = ai.defineFlow(
       },
     });
 
-    console.log('Starting HeyGen video generation task...');
+    console.log('Starting HeyGen video generation task with body:', body);
     const response = await fetch(url, { method: 'POST', headers, body });
 
     if (!response.ok) {
@@ -119,10 +144,11 @@ const generateVideoHeygenFlow = ai.defineFlow(
 
     console.log(`HeyGen task started with video ID: ${videoId}. Now polling for completion...`);
 
-    const videoUrl = await pollVideoStatus(videoId, apiKey);
+    const { videoUrl, thumbnailUrl } = await pollVideoStatus(videoId, apiKey);
     
     return {
       videoUrl,
+      thumbnailUrl,
     };
   }
 );

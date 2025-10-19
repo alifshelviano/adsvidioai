@@ -16,6 +16,7 @@ import {
 import { generatePromotionalVisual, GeneratePromotionalVisualOutput } from "@/ai/flows/generate-promotional-visual";
 import { generateVideoRunway, GenerateVideoRunwayOutput } from "@/ai/flows/generate-video-runway";
 import { generateVideoHeygen, GenerateVideoHeygenOutput } from "@/ai/flows/generate-video-heygen";
+import { updateProjectVideo } from "@/app/actions";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -50,6 +51,7 @@ export function ProjectClientPage({ project }: { project: Project }) {
   const [videoProvider, setVideoProvider] = useState<VideoProvider>('runway');
   const [videoStatus, setVideoStatus] = useState<string | null>(null);
   const [videoScript, setVideoScript] = useState<string>('');
+  const [heygenAvatar, setHeygenAvatar] = useState<string>('Abigail_standing_office_front');
 
 
   const [loading, setLoading] = useState<LoadingStates>({
@@ -69,10 +71,10 @@ export function ProjectClientPage({ project }: { project: Project }) {
     setLoading((prev) => ({ ...prev, adContent: true }));
     try {
       const result: GenerateAdContentOutput = await generateAdContent({
-        productTitle: project.product.title,
-        productDescription: project.product.description,
-        productPrice: project.product.price,
-        productImageUrl: project.product.imageUrl,
+        productTitle: project.title,
+        productDescription: project.description,
+        productPrice: project.price || 0,
+        productImageUrl: project.imageUrl,
       });
       setAdContent(result);
     } catch (error) {
@@ -113,8 +115,8 @@ export function ProjectClientPage({ project }: { project: Project }) {
     setLoading((prev) => ({ ...prev, visual: true }));
     try {
         const result = await generatePromotionalVisual({
-            productTitle: project.product.title,
-            productDescription: project.product.description,
+            productTitle: project.title,
+            productDescription: project.description,
         });
         setVisual(result);
     } catch (error) {
@@ -162,11 +164,15 @@ export function ProjectClientPage({ project }: { project: Project }) {
       } else { // heygen
         setVideoStatus("Calling HeyGen API... This may take up to a minute or two.");
         result = await generateVideoHeygen({
-            promptText: videoScript
+            promptText: videoScript,
+            avatarId: heygenAvatar,
         });
       }
       setVideo(result);
-      setVideoStatus("Video generated successfully!");
+      setVideoStatus("Video generated successfully! Saving to project...");
+      await updateProjectVideo(project._id, result.videoUrl, (result as GenerateVideoHeygenOutput).thumbnailUrl);
+      setVideoStatus("Video saved to project!");
+
     } catch (error: any) {
       console.error('Error generating video:', error);
       setVideoStatus("Video generation failed.");
@@ -178,7 +184,7 @@ export function ProjectClientPage({ project }: { project: Project }) {
     } finally {
       setLoading(prev => ({ ...prev, video: false }));
     }
-  };
+  }; 
   
   const handleDownloadText = (content: AdContent) => {
     const textContent = `
@@ -197,7 +203,7 @@ ${content.hashtags}
     a.href = url;
     a.download = "ad_content.txt";
     document.body.appendChild(a);
-a.click();
+    a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
@@ -405,7 +411,21 @@ a.click();
                   </SelectContent>
                 </Select>
                  {videoProvider === 'runway' && <p className="text-sm text-muted-foreground">Requires a generated visual.</p>}
-                 {videoProvider === 'heygen' && <p className="text-sm text-muted-foreground">Uses a default avatar and the ad script.</p>}
+                 {videoProvider === 'heygen' && (
+                    <div className="space-y-2 pt-2">
+                        <Label htmlFor="heygen-avatar">Avatar</Label>
+                        <Select value={heygenAvatar} onValueChange={setHeygenAvatar} disabled={loading.video}>
+                        <SelectTrigger id="heygen-avatar">
+                            <SelectValue placeholder="Select an avatar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="Abigail_standing_office_front">Wanita</SelectItem>
+                            <SelectItem value="Bojan_standing_businesstraining_front">Pria</SelectItem>
+                        </SelectContent>
+                        </Select>
+                        <p className="text-sm text-muted-foreground">Choose the avatar for the HeyGen video.</p>
+                    </div>
+                    )}
               </div>
               <Button onClick={handleGenerateVideo} className="w-full" disabled={loading.video || (isRunway && !isRunwayReady) || (!isRunway && !isHeygenReady)}>
                 {loading.video ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
@@ -429,7 +449,7 @@ a.click();
                     )}
                     {video && (
                         <>
-                            <video controls src={video.videoUrl} className="w-full rounded-lg border bg-black"></video>
+                            <video controls src={video.videoUrl} className="w-full rounded-lg border bg-black" poster={(video as GenerateVideoHeygenOutput).thumbnailUrl}></video>
                              <CardFooter className="px-0 pt-4">
                                 <Button asChild variant="outline">
                                     <a href={video.videoUrl} target="_blank" download="video_ad.mp4">
@@ -443,6 +463,17 @@ a.click();
                     {!loading.video && !video && videoStatus && (
                          <p className="text-destructive">{videoStatus}</p>
                     )}
+                </CardContent>
+            </Card>
+        )}
+
+        { project.videoUrl && (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Previously Generated Video</CardTitle>
+                </CardHeader>
+                <CardContent>
+                     <video controls src={project.videoUrl} poster={project.thumbnailUrl} className="w-full rounded-lg border bg-black"></video>
                 </CardContent>
             </Card>
         )}
@@ -462,7 +493,7 @@ a.click();
             {loading.narration && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Narration
         </TabsTrigger>
-        <TabsTrigger value="visual" disabled={loading.visual}>
+        <TabsTrigger value="visual" disabled={!adContent || loading.visual}>
             {loading.visual && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Visuals
         </TabsTrigger>
@@ -475,23 +506,26 @@ a.click();
       <TabsContent value="product">
         <Card>
           <CardHeader>
-            <CardTitle>{project.product.title}</CardTitle>
-            <CardDescription>
-              Price: ${project.product.price.toFixed(2)}
-            </CardDescription>
+            <CardTitle>{project.title}</CardTitle>
+            {project.price && (
+                <CardDescription>
+                Price: ${project.price.toFixed(2)}
+                </CardDescription>
+            )}
           </CardHeader>
           <CardContent className="grid gap-6 md:grid-cols-2">
-            <div className="relative aspect-video">
-              <Image
-                src={project.product.imageUrl}
-                alt={project.product.title}
-                fill
-                className="rounded-md border object-cover"
-                data-ai-hint={project.product.imageHint}
-              />
-            </div>
+            {project.imageUrl && (
+                <div className="relative aspect-video">
+                <Image
+                    src={project.imageUrl}
+                    alt={project.title}
+                    fill
+                    className="rounded-md border object-cover"
+                />
+                </div>
+            )}
             <p className="text-muted-foreground">
-              {project.product.description}
+              {project.description}
             </p>
           </CardContent>
         </Card>
