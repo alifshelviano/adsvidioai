@@ -94,7 +94,7 @@ const generateVideoHeygenFlow = ai.defineFlow(
         avatar_id: 'Abigail_standing_office_front',
         avatar_style: 'normal',
         scale: 3.30,
-        offset: { x: 0.00, y: -0.12 },
+        offset: { x: 0.00, y: 0.00 },
     };
 
     const voiceConfig = avatarId === maleAvatarId ? {
